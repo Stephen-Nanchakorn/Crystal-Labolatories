@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
+import PluginPurchaseButton from "../../components/PluginPurchaseButton";
 
 export function generateStaticParams() {
   return plugins.map((plugin) => ({ slug: plugin.slug }));
@@ -41,12 +42,11 @@ export default async function PluginDetail({
 
         <div className="flex items-center justify-between bg-gray-900 border border-cyan-400/50 rounded-2xl p-6">
           <span className="text-xl sm:text-2xl font-bold text-cyan-400">
-            {plugin.price}
+            {plugin.isFree ? "ฟรี" : `${plugin.price}`}
           </span>
-          <button className="px-6 py-3 bg-cyan-500 hover:bg-cyan-400 text-black font-bold rounded-full transition">
-            ซื้อเลย
-          </button>
+          <PluginPurchaseButton plugin={plugin} />
         </div>
+
       </section>
 
       <Footer />
