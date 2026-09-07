@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Plugin } from "@/data/plugins"; // ← เพิ่มบรรทัดนี้
+import type { Plugin } from "../data/plugins";
 
 export default function PluginPurchaseButton({ plugin }: { plugin: Plugin }) {
   const [showModal, setShowModal] = useState(false);

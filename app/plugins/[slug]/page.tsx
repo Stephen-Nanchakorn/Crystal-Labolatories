@@ -42,7 +42,7 @@ export default async function PluginDetail({
 
         <div className="flex items-center justify-between bg-gray-900 border border-cyan-400/50 rounded-2xl p-6">
           <span className="text-xl sm:text-2xl font-bold text-cyan-400">
-            <p>{plugin.isFree ? "ฟรี" : `฿${THB} / ${USD}`}</p>
+            <p>{plugin.isFree ? "ฟรี" : `฿${plugin.priceTHB} / ${plugin.priceUSD}`}</p>
           </span>
           <PluginPurchaseButton plugin={plugin} />
         </div>
