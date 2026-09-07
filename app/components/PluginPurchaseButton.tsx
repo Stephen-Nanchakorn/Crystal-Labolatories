@@ -1,10 +1,6 @@
 "use client";
 
 import { useState } from "react";
-
-"use client";
-
-import { useState } from "react";
 import type { Plugin } from "@/data/plugins"; // ← เพิ่มบรรทัดนี้
 
 export default function PluginPurchaseButton({ plugin }: { plugin: Plugin }) {
