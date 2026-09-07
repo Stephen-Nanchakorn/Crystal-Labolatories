@@ -2,14 +2,10 @@
 
 import { useState } from "react";
 
-type Plugin = {
-  name: string;
-  price: number;
-  priceTHB?: number;
-  isFree?: boolean;
-  downloadUrl?: string;
-  payhipUrl?: string | null;
-};
+"use client";
+
+import { useState } from "react";
+import type { Plugin } from "@/data/plugins"; // ← เพิ่มบรรทัดนี้
 
 export default function PluginPurchaseButton({ plugin }: { plugin: Plugin }) {
   const [showModal, setShowModal] = useState(false);

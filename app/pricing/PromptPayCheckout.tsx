@@ -38,10 +38,16 @@ export default function PromptPayCheckout({
       return;
     }
 
-    if (paymentIntent?.next_action?.promptpay_display_qr_code) {
-      setQrCodeUrl(paymentIntent.next_action.promptpay_display_qr_code.image_url_png);
+    const nextAction = paymentIntent?.next_action as any;
+
+    if (nextAction?.promptpay_display_qr_code) {
+
+      setQrCodeUrl(nextAction.promptpay_display_qr_code.image_url_png);
+
       setStatus("waiting");
-      pollPaymentStatus(paymentIntent.id);
+
+      pollPaymentStatus(paymentIntent!.id);
+
     }
   };
 
