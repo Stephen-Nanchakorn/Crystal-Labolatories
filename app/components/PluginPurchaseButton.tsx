@@ -8,7 +8,7 @@ export default function PluginPurchaseButton({ plugin }: { plugin: Plugin }) {
 
   if (plugin.isFree) {
     return (
-      <a href={plugin.downloadUrl} download>
+      <a href={plugin.downloadUrl ?? undefined} download>
         <button className="px-6 py-3 bg-cyan-500 hover:bg-cyan-400 text-black font-bold rounded-full transition">
           ดาวน์โหลดฟรี 🎉
         </button>
