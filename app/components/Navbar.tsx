@@ -11,6 +11,16 @@ export default function Navbar() {
 
         {/* Desktop Menu */}
         <div className="hidden md:flex gap-8 text-gray-300">
+          // ใน Navbar.tsx (แบบเดิมที่ไม่มีระบบเช็ค session)
+          <div className="flex items-center gap-4">
+            <a href="/login" className="text-gray-300 hover:text-white">
+              เข้าสู่ระบบ
+            </a>
+            <a href="/signup" className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 rounded-lg">
+              สมัครสมาชิก
+            </a>
+          </div>
+
           <a href="#" className="hover:text-white transition">หน้าแรก</a>
           <a href="#plugins" className="hover:text-white transition">ปลั๊กอิน</a>
           <a href="#" className="hover:text-white transition">เกี่ยวกับเรา</a>
