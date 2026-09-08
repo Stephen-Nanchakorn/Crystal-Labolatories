@@ -7,13 +7,15 @@ export default function OAuthButtons() {
   const supabase = createClient();
 
   const handleGoogleAuth = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-  };
+  await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      // แก้ตรงนี้ให้เป็น Production URL ที่แท้จริง
+      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+    },
+  });
+};
+
 
 
   return (
