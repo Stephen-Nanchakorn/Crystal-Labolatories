@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import OAuthButtons from "@/components/OAuthButtons";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -39,6 +40,9 @@ export default function LoginPage() {
         className="bg-gray-900 p-8 rounded-2xl w-full max-w-sm space-y-4"
       >
         <h1 className="text-2xl font-bold text-white text-center">เข้าสู่ระบบ</h1>
+
+        {/* ปุ่ม Google Login */}
+        <OAuthButtons />
 
         {error && (
           <p className="text-red-500 text-sm text-center">{error}</p>
