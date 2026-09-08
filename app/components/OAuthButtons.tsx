@@ -6,15 +6,17 @@ import { createClient } from "../../lib/supabase/client";
 export default function OAuthButtons() {
   const supabase = createClient();
 
+  // ใน OAuthButtons.tsx
   const handleGoogleAuth = async () => {
-  await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      // แก้ตรงนี้ให้เป็น Production URL ที่แท้จริง
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
-    },
-  });
-};
+    await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: "https://crystal-laboratories-zc28.vercel.app/auth/callback",
+        // หรือ ถ้ายังไม่ได้ ลองแบบนี้:
+        // redirectTo: "https://npszyidwudbcmvcjckzm.supabase.co/auth/v1/callback"
+      },
+    });
+  };
 
 
 
