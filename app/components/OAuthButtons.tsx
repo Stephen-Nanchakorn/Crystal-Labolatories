@@ -8,14 +8,18 @@ export default function OAuthButtons() {
 
   // ใน OAuthButtons.tsx
   const handleGoogleAuth = async () => {
-    await supabase.auth.signInWithOAuth({
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: "https://crystal-laboratories-zc28.vercel.app/auth/callback",
-        // หรือ ถ้ายังไม่ได้ ลองแบบนี้:
-        // redirectTo: "https://npszyidwudbcmvcjckzm.supabase.co/auth/v1/callback"
+        redirectTo: `${window.location.origin}/auth/callback`,
+        // เปิด PKCE (ช่วยแก้ปัญหา cookie บางกรณี)
+        skipBrowserRedirect: false,
       },
     });
+
+    if (error) {
+      console.error("OAuth error:", error);
+    }
   };
 
 
