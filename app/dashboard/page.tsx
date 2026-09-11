@@ -100,14 +100,6 @@ export default async function DashboardPage() {
               >
                 ไปที่หน้าปลั๊กอิน
               </a>
-              <form action="/auth/signout" method="POST">
-                <button
-                  type="submit"
-                  className="w-full text-center text-red-400 border border-red-500/40 hover:bg-red-500/10 py-2 px-4 rounded-full transition-colors"
-                >
-                  ออกจากระบบ
-                </button>
-              </form>
             </div>
           </div>
         </div>

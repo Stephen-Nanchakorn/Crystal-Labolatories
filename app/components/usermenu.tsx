@@ -4,9 +4,9 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-export default function UserMenu({ 
-  displayName 
-}: { 
+export default function UserMenu({
+  displayName
+}: {
   displayName: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -25,11 +25,12 @@ export default function UserMenu({
   }, []);
 
   const handleSignOut = async () => {
-    const supabase = createClient();
+    const supabase = createClient(); // ← createBrowserClient
     await supabase.auth.signOut();
     router.push("/");
     router.refresh();
   };
+
 
   const userInitial = displayName[0]?.toUpperCase() || "U";
 
@@ -68,7 +69,7 @@ export default function UserMenu({
             <div className="font-semibold text-white truncate">{displayName}</div>
             <div className="text-xs text-gray-400 truncate">ผู้ใช้งานระดับ Premium</div>
           </div>
-          
+
           <a
             href="/dashboard"
             className="flex items-center gap-3 px-4 py-3 text-white hover:bg-gray-800 transition-colors"
@@ -76,7 +77,7 @@ export default function UserMenu({
             <span className="text-lg">👤</span>
             <span>บัญชีของฉัน</span>
           </a>
-          
+
           <a
             href="/profile"
             className="flex items-center gap-3 px-4 py-3 text-white hover:bg-gray-800 transition-colors"
@@ -84,7 +85,7 @@ export default function UserMenu({
             <span className="text-lg">⚙️</span>
             <span>ตั้งค่าบัญชี</span>
           </a>
-          
+
           <a
             href="/purchases"
             className="flex items-center gap-3 px-4 py-3 text-white hover:bg-gray-800 transition-colors"
