@@ -1,62 +1,49 @@
-"use client";
-import { useState } from "react";
+import { createClient } from "@/lib/supabase/server";
+import UserMenu from "./usermenu";
 
-export default function Navbar() {
-  const [open, setOpen] = useState(false);
+export default async function Header() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const displayName = 
+    user?.user_metadata?.full_name?.split(" ")[0] || 
+    user?.email?.split("@")[0] || 
+    "User";
 
   return (
-    <nav className="fixed top-0 w-full bg-black/80 backdrop-blur-md z-50 border-b border-gray-800">
-      <div className="max-w-6xl mx-auto flex justify-between items-center px-4 sm:px-6 py-4">
-        <span className="text-white font-extrabold text-xl">CRYSTAL</span>
+    <header className="bg-black border-b border-gray-800 px-8 py-4">
+      <nav className="max-w-7xl mx-auto flex items-center justify-between">
+        <a href="/" className="text-2xl font-bold text-white">
+          CRYSTAL
+        </a>
 
-        {/* Desktop Menu */}
-        <div className="hidden md:flex items-center gap-8 text-gray-300">
-          {/* เมนูนำทาง (ซ้าย-กลาง) */}
-          <a href="/" className="hover:text-white transition">หน้าแรก</a>
-          <a href="/plugins" className="hover:text-white transition">ปลั๊กอิน</a>
+        <div className="flex items-center gap-8">
+          <a href="/" className="text-white hover:text-cyan-400 transition-colors">
+            หน้าแรก
+          </a>
+          <a href="/plugins" className="text-white hover:text-cyan-400 transition-colors">
+            ปลั๊กอิน
+          </a>
 
-          {/* ปุ่ม Login/Signup (ขวาสุด) */}
-          <div className="flex items-center gap-4 pl-4 border-l border-gray-700">
-            <a href="/login" className="text-gray-300 hover:text-white">
-              เข้าสู่ระบบ
-            </a>
-            <a
-              href="/signup"
-              className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-black font-bold rounded-lg transition"
-            >
-              สมัครสมาชิก
-            </a>
-          </div>
+          {user ? (
+            // ✅ Login แล้ว → แสดง Hello, ชื่อ + Dropdown
+            <UserMenu displayName={displayName} />
+          ) : (
+            // ❌ ยังไม่ Login → แสดงปุ่มเดิม
+            <div className="flex items-center gap-4">
+              <a href="/login" className="text-white hover:text-cyan-400 transition-colors">
+                เข้าสู่ระบบ
+              </a>
+              <a
+                href="/signup"
+                className="bg-cyan-400 hover:bg-cyan-500 text-black font-semibold px-6 py-2 rounded-full transition-colors"
+              >
+                สมัครสมาชิก
+              </a>
+            </div>
+          )}
         </div>
-
-        {/* Mobile Button */}
-        <button
-          onClick={() => setOpen(!open)}
-          className="md:hidden text-white text-2xl"
-        >
-          {open ? "×" : "="}
-        </button>
-      </div>
-
-      {/* Mobile Menu */}
-      {open && (
-        <div className="md:hidden flex flex-col gap-4 px-6 pb-6 text-gray-300">
-          <a href="/" onClick={() => setOpen(false)} className="hover:text-white">หน้าแรก</a>
-          <a href="/plugins" onClick={() => setOpen(false)} className="hover:text-white">ปลั๊กอิน</a>
-          <div className="flex flex-col gap-3 pt-4 border-t border-gray-700">
-            <a href="/login" onClick={() => setOpen(false)} className="text-gray-300 hover:text-white">
-              เข้าสู่ระบบ
-            </a>
-            <a
-              href="/signup"
-              onClick={() => setOpen(false)}
-              className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-black font-bold rounded-lg text-center"
-            >
-              สมัครสมาชิก
-            </a>
-          </div>
-        </div>
-      )}
-    </nav>
+      </nav>
+    </header>
   );
 }
