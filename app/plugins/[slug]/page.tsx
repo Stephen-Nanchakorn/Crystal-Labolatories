@@ -1,25 +1,78 @@
 import PriceDisplay from "@/app/components/PriceDisplay";
 import Link from "next/link";
 
-// Mock data - ต่อไปดึงจาก Supabase/Database
+// ข้อมูลปลั๊กอินทั้ง 3 ตัว
 const pluginData: Record<string, any> = {
-  "crystal-compressor": {
-    name: "Crystal Compressor",
-    description: "คอนเพรสเซอร์เสียงระดับสตูดิโอที่แม่นยำที่สุดในตลาด",
-    longDescription: `
-      Crystal Compressor เป็นคอนเพรสเซอร์เสียงระดับมืออาชีพที่ออกแบบมาเพื่อโปรดิวเซอร์
-      และเอนจิเนียร์ที่ต้องการควบคุมไดนามิกส์อย่างละเอียด ด้วยอัลกอริธึมการบีบอัดแบบคลาส A
-      และฟีเจอร์เช่น Auto-Gain, Sidechain, และ Parallel Compression
-      ทำให้สามารถใช้งานได้กับทุกประเภทของเสียง
+  "drop-tune": {
+    name: "Drop-Tune",
+    tagline: "ปลั๊กอินปรับจูนเสียงฟรี สำหรับ Guitar, Bass และ Keyboard",
+    description: `
+      Drop-Tune เป็นปลั๊กอินปรับจูนเสียงแบบ Real-time ที่ให้กลิ่นอายเสียงแบบ Analog Gear
+      ใช้งานง่าย เหมาะสำหรับมือกีต้าร์, เบส และคีย์บอร์ดที่ต้องการปรับแต่งเสียงแบบดั้งเดิม
+      แต่มีประสิทธิภาพสูงในการปรับจูนและการควบคุมเสียง
     `,
-    priceUSD: 49.99,
+    priceUSD: 0, // ฟรี
     features: [
-      "Vintage and Modern compression modes",
-      "Auto-Gain compensation",
-      "Sidechain filtering",
-      "Parallel compression control",
-      "64-bit floating point processing",
+      "Real-time pitch shifting",
+      "Guitar, Bass, Keyboard modes",
+      "Analog warmth simulation",
+      "Low-latency processing",
+      "64-bit floating point",
       "ARM64 Native for M4 Max",
+    ],
+    systemRequirements: [
+      "MacOS Ventura 13.0+",
+      "Pro Tools 2023+, Logic Pro X, Ableton Live 11+",
+      "M1/M2/M3/M4 (ARM64 Native)",
+      "2GB RAM minimum",
+      "AU, VST3, AAX formats",
+    ],
+    demoUrl: "/demo/drop-tune",
+    icon: "🎸",
+  },
+  "stem-splitter": {
+    name: "Stem Splitter",
+    tagline: "แยกเสียงดนตรีด้วย AI ความละเอียดสูง",
+    description: `
+      Stem Splitter ใช้เทคโนโลยี AI ล้ำสมัยในการแยกเสียงดนตรีออกเป็นส่วนๆ
+      แยกได้ละเอียดถึง 10 ส่วน ตั้งแต่ Vocal, Drum, Bass, Guitar, Piano,
+      Strings, Brass, Synthesizer และอีกมากมาย
+    `,
+    priceUSD: 29.99,
+    features: [
+      "AI-powered stem separation",
+      "10 stem types: Vocal, Drum, Bass, Guitar, Piano, Strings, etc.",
+      "Batch processing",
+      "High-quality 24-bit output",
+      "Custom separation models",
+      "GPU acceleration support",
+    ],
+    systemRequirements: [
+      "MacOS Ventura 13.0+",
+      "8GB RAM minimum (16GB recommended)",
+      "M-series chip with Neural Engine",
+      "200MB free disk space",
+      "AU, VST3, AAX formats",
+    ],
+    demoUrl: "/demo/stem-splitter",
+    icon: "🧬",
+  },
+  "analog-eq": {
+    name: "Analog EQ",
+    tagline: "Graphic EQ สไตล์ Knob 7-Band พร้อม Gate และ Compressor",
+    description: `
+      Analog EQ เป็น Graphic Equalizer แบบ 7-Band ที่ออกแบบมาโดยเฉพาะสำหรับ
+      Guitar และ Bass เสียงแบบ Analog warm tone พร้อม Gate และ Compressor
+      ในตัวเพื่อให้เสียงมีความสมบูรณ์แบบในปลั๊กอินเดียว
+    `,
+    priceUSD: 19.99,
+    features: [
+      "7-band graphic EQ with analog modeling",
+      "Built-in Noise Gate",
+      "Built-in Compressor",
+      "Guitar & Bass optimized presets",
+      "Vintage and Modern modes",
+      "Parallel processing control",
     ],
     systemRequirements: [
       "MacOS Ventura 13.0+",
@@ -28,17 +81,9 @@ const pluginData: Record<string, any> = {
       "4GB RAM minimum",
       "AU, VST3, AAX formats",
     ],
-    demoUrl: "https://example.com/demo/crystal-compressor",
+    demoUrl: "/demo/analog-eq",
+    icon: "🎛️",
   },
-  "crystal-reverb": {
-    name: "Crystal Reverb",
-    description: "รีเวิร์บเสียงธรรมชาติเหมือนอยู่ในห้องจริง",
-    priceUSD: 79.99,
-    features: ["Algorithmic & Convolution reverb", "12 reverb types", "EQ section", "Early reflections control"],
-    systemRequirements: ["MacOS Ventura 13.0+", "M1/M2/M3/M4", "AU, VST3, AAX"],
-    demoUrl: "https://example.com/demo/crystal-reverb",
-  },
-  // ... add more plugins
 };
 
 export default async function PluginDetailPage({
@@ -49,6 +94,7 @@ export default async function PluginDetailPage({
   const { slug } = await params;
   const plugin = pluginData[slug];
 
+  // ถ้าไม่พบปลั๊กอิน
   if (!plugin) {
     return (
       <main className="min-h-screen bg-black text-white p-8">
@@ -87,27 +133,52 @@ export default async function PluginDetailPage({
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Left Column - Info */}
           <div>
-            <h1 className="text-4xl font-bold mb-2">{plugin.name}</h1>
-            <p className="text-xl text-gray-300 mb-6">{plugin.description}</p>
-
-            {/* Price & Buy */}
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 mb-6">
-              <PriceDisplay usdPrice={plugin.priceUSD} />
-              <div className="mt-6 space-y-3">
-                <Link
-                  href={`/checkout/${slug}`}
-                  className="block text-center bg-gradient-to-r from-cyan-400 to-cyan-500 hover:from-cyan-500 hover:to-cyan-600 text-black font-bold py-4 rounded-xl text-lg"
-                >
-                  ซื้อเลย - รับ License ทันที
-                </Link>
-                <a
-                  href={plugin.demoUrl}
-                  target="_blank"
-                  className="block text-center border border-cyan-400 text-cyan-400 hover:bg-cyan-400/10 font-bold py-4 rounded-xl"
-                >
-                  🎧 ดาวน์โหลดเวอร์ชันทดลอง
-                </a>
+            {/* Title */}
+            <div className="flex items-start gap-4 mb-4">
+              <div className="text-6xl">{plugin.icon}</div>
+              <div>
+                <h1 className="text-4xl font-bold">{plugin.name}</h1>
+                <p className="text-xl text-cyan-400">{plugin.tagline}</p>
               </div>
+            </div>
+
+            <p className="text-gray-300 mb-8 whitespace-pre-line">
+              {plugin.description}
+            </p>
+
+            {/* Price & Buy Section */}
+            <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 mb-8">
+              {plugin.priceUSD === 0 ? (
+                <div>
+                  <div className="text-3xl font-bold text-green-400 mb-4">
+                    FREE! 🎉
+                  </div>
+                  <a
+                    href={plugin.demoUrl}
+                    className="block text-center bg-cyan-400 hover:bg-cyan-500 text-black font-bold py-4 rounded-xl text-lg"
+                  >
+                    📥 ดาวน์โหลดฟรีทันที
+                  </a>
+                </div>
+              ) : (
+                <>
+                  <PriceDisplay usdPrice={plugin.priceUSD} />
+                  <div className="mt-6 space-y-3">
+                    <Link
+                      href={`/checkout/${slug}`}
+                      className="block text-center bg-gradient-to-r from-cyan-400 to-cyan-500 hover:from-cyan-500 hover:to-cyan-600 text-black font-bold py-4 rounded-xl text-lg"
+                    >
+                      🛒 ซื้อเลย - รับ License ทันที
+                    </Link>
+                    <a
+                      href={plugin.demoUrl}
+                      className="block text-center border border-cyan-400 text-cyan-400 hover:bg-cyan-400/10 font-bold py-4 rounded-xl"
+                    >
+                      🎧 ดาวน์โหลดเวอร์ชันทดลองฟรี
+                    </a>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Features */}
@@ -115,11 +186,11 @@ export default async function PluginDetailPage({
               <h2 className="text-2xl font-bold mb-4 text-cyan-400">
                 ฟีเจอร์หลัก
               </h2>
-              <ul className="space-y-2">
+              <ul className="space-y-3">
                 {plugin.features.map((feature: string, index: number) => (
-                  <li key={index} className="flex items-center">
-                    <span className="text-cyan-400 mr-2">✓</span>
-                    {feature}
+                  <li key={index} className="flex items-start">
+                    <span className="text-cyan-400 mr-2 mt-1">✓</span>
+                    <span>{feature}</span>
                   </li>
                 ))}
               </ul>
@@ -128,33 +199,20 @@ export default async function PluginDetailPage({
 
           {/* Right Column - Demo & Requirements */}
           <div>
-            {/* Demo Placeholder */}
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 mb-6">
-              <h2 className="text-2xl font-bold mb-4">Demo</h2>
-              <div className="aspect-video bg-gradient-to-br from-cyan-400/10 to-purple-600/10 rounded-lg flex items-center justify-center">
-                <div className="text-center">
-                  <div className="text-6xl mb-4">🎚️</div>
-                  <p className="text-gray-400">
-                    Plugin Interface Preview
-                  </p>
-                </div>
-              </div>
-            </div>
-
             {/* System Requirements */}
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+            <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 mb-8">
               <h2 className="text-2xl font-bold mb-4 text-cyan-400">
                 ข้อกำหนดระบบ
               </h2>
-              <ul className="space-y-3">
+              <ul className="space-y-3 mb-6">
                 {plugin.systemRequirements.map((req: string, index: number) => (
-                  <li key={index} className="flex items-center">
-                    <span className="text-gray-400 mr-2">•</span>
-                    {req}
+                  <li key={index} className="flex items-start">
+                    <span className="text-gray-400 mr-2 mt-1">•</span>
+                    <span>{req}</span>
                   </li>
                 ))}
               </ul>
-              <div className="mt-6 p-4 bg-gray-800 rounded-lg">
+              <div className="p-4 bg-gray-800 rounded-lg">
                 <div className="flex items-center gap-3">
                   <div className="text-3xl">🍎</div>
                   <div>
@@ -165,6 +223,31 @@ export default async function PluginDetailPage({
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Demo Placeholder */}
+            <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+              <h2 className="text-2xl font-bold mb-4">ตัวอย่างเสียง</h2>
+              <div className="aspect-video bg-gradient-to-br from-cyan-400/10 to-purple-600/10 rounded-lg flex flex-col items-center justify-center p-8">
+                <div className="text-8xl mb-6">{plugin.icon}</div>
+                <p className="text-center text-gray-400 mb-4">
+                  {plugin.name} - Sound Demo
+                </p>
+                <div className="w-full h-2 bg-gray-700 rounded-full mb-2"></div>
+                <div className="w-full h-1 bg-gray-800 rounded-full"></div>
+                <div className="flex justify-between w-full mt-4 text-sm text-gray-500">
+                  <span>Dry</span>
+                  <span>Wet</span>
+                </div>
+              </div>
+              <div className="text-center mt-4">
+                <a
+                  href={plugin.demoUrl}
+                  className="text-cyan-400 hover:text-cyan-300 inline-flex items-center gap-2"
+                >
+                  🎧 ฟังตัวอย่างเสียงทั้งหมด →
+                </a>
               </div>
             </div>
           </div>

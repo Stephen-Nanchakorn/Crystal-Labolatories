@@ -20,12 +20,12 @@ export default function RootLayout({
       <body className={`${inter.className} bg-black text-white min-h-screen`}>
         <Header />
         <main className="min-h-[calc(100vh-80px)]">{children}</main>
-        
+
         {/* Footer */}
         <footer className="border-t border-gray-800 py-8 px-8 text-center text-gray-500 text-sm">
           <p>© 2026 CRYSTAL LABS. All rights reserved.</p>
-          <p className="mt-2">Audio Plugin Technology | M4 Max Optimized</p>
         </footer>
+
       </body>
     </html>
   );
