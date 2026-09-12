@@ -6,17 +6,17 @@ export default async function Header() {
   const { data: { user } } = await supabase.auth.getUser();
 
   // สร้างชื่อแสดง (จาก full_name หรือ email)
-  const displayName = 
-    user?.user_metadata?.full_name?.split(" ")[0] || 
-    user?.email?.split("@")[0] || 
+  const displayName =
+    user?.user_metadata?.full_name?.split(" ")[0] ||
+    user?.email?.split("@")[0] ||
     "User";
 
   return (
     <header className="sticky top-0 z-50 bg-black/95 backdrop-blur supports-[backdrop-filter]:bg-black/80 border-b border-gray-800 px-8 py-4">
       <nav className="max-w-7xl mx-auto flex items-center justify-between">
         {/* Logo */}
-        <a 
-          href="/" 
+        <a
+          href="/"
           className="flex items-center gap-2 group"
         >
           <div className="w-8 h-8 bg-gradient-to-br from-cyan-400 to-purple-600 rounded-lg"></div>
@@ -28,26 +28,26 @@ export default async function Header() {
 
         {/* Navigation Links */}
         <div className="hidden md:flex items-center gap-8">
-          <a 
-            href="/" 
+          <a
+            href="/"
             className="text-gray-300 hover:text-cyan-400 transition-colors font-medium"
           >
             หน้าแรก
           </a>
-          <a 
-            href="/plugins" 
+          <a
+            href="/plugins"
             className="text-gray-300 hover:text-cyan-400 transition-colors font-medium"
           >
             ปลั๊กอิน
           </a>
-          <a 
-            href="/pricing" 
+          <a
+            href="/pricing"
             className="text-gray-300 hover:text-cyan-400 transition-colors font-medium"
           >
             ราคา
           </a>
-          <a 
-            href="/support" 
+          <a
+            href="/support"
             className="text-gray-300 hover:text-cyan-400 transition-colors font-medium"
           >
             ช่วยเหลือ
@@ -62,8 +62,8 @@ export default async function Header() {
           ) : (
             // ❌ ยังไม่ Login → แสดงปุ่มเดิม
             <>
-              <a 
-                href="/login" 
+              <a
+                href="/login"
                 className="text-gray-300 hover:text-cyan-400 transition-colors font-medium"
               >
                 เข้าสู่ระบบ
@@ -74,6 +74,10 @@ export default async function Header() {
               >
                 สมัครสมาชิก
               </a>
+              <a href="/" className="...">หน้าแรก</a>
+              <a href="/plugins" className="...">ปลั๊กอิน</a> {/* ✅ ต้องมีบรรทัดนี้ */}
+              <a href="/pricing" className="...">ราคา</a>
+              <a href="/support" className="...">ช่วยเหลือ</a>
             </>
           )}
         </div>
