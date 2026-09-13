@@ -103,7 +103,7 @@ export default async function PluginDetailPage({
           </p>
           <Link
             href="/plugins"
-            className="inline-block bg-cyan-400 text-black font-bold px-6 py-3 rounded-lg"
+            className="inline-block bg-cyan-400 text-black font-bold px-6 py-3 rounded-lg hover:bg-cyan-500"
           >
             กลับไปหน้ารายการปลั๊กอิน
           </Link>
@@ -153,27 +153,25 @@ export default async function PluginDetailPage({
                   </div>
                   <a
                     href={plugin.demoUrl}
-                    className="block text-center bg-cyan-400 hover:bg-cyan-500 text-black font-bold py-4 rounded-xl text-lg"
+                    className="block text-center bg-cyan-400 hover:bg-cyan-500 text-black font-bold py-4 rounded-xl text-lg transition-colors"
                   >
                     📥 ดาวน์โหลดฟรีทันที
                   </a>
                 </div>
               ) : (
                 <>
-                  <PriceDisplay
-                    usdPrice={plugin.priceUSD}
-                    thbPrice={plugin.priceTHB}
-                  />
+                  {/* PriceDisplay - ใช้ pluginId แทน */}
+                  <PriceDisplay pluginId={slug as any} />
                   <div className="mt-6 space-y-3">
                     <Link
                       href={`/checkout/${slug}`}
-                      className="block text-center bg-gradient-to-r from-cyan-400 to-cyan-500 hover:from-cyan-500 hover:to-cyan-600 text-black font-bold py-4 rounded-xl text-lg"
+                      className="block text-center bg-gradient-to-r from-cyan-400 to-cyan-500 hover:from-cyan-500 hover:to-cyan-600 text-black font-bold py-4 rounded-xl text-lg transition-all"
                     >
                       🛒 ซื้อเลย - รับ License ทันที
                     </Link>
                     <a
                       href={plugin.demoUrl}
-                      className="block text-center border border-cyan-400 text-cyan-400 hover:bg-cyan-400/10 font-bold py-4 rounded-xl"
+                      className="block text-center border border-cyan-400 text-cyan-400 hover:bg-cyan-400/10 font-bold py-4 rounded-xl transition-colors"
                     >
                       🎧 ดาวน์โหลดเวอร์ชันทดลองฟรี
                     </a>
@@ -233,7 +231,7 @@ export default async function PluginDetailPage({
               <div className="text-center mt-4">
                 <a
                   href={plugin.demoUrl}
-                  className="text-cyan-400 hover:text-cyan-300 inline-flex items-center gap-2"
+                  className="text-cyan-400 hover:text-cyan-300 inline-flex items-center gap-2 transition-colors"
                 >
                   🎧 ฟังตัวอย่างเสียงทั้งหมด →
                 </a>
