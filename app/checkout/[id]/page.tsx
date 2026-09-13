@@ -3,7 +3,6 @@ import { createCheckoutSession } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
-// ข้อมูลราคาปลั๊กอิน
 const pluginPrices = {
   "drop-tune": {
     name: "Drop-Tune",
@@ -29,9 +28,6 @@ export default async function CheckoutPage({
 }) {
   const { id: pluginId } = await params;
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
   const plugin = pluginPrices[pluginId as keyof typeof pluginPrices] || {
     name: "Unknown Plugin",
@@ -42,8 +38,8 @@ export default async function CheckoutPage({
   const pluginPriceUSD = plugin.usd;
   const pluginPriceTHB = plugin.thb;
 
-  // Server Action สำหรับ Checkout
-  async function createStripeSession(currency: "THB" | "USD") {
+  // ✅ เปลี่ยนเป็นใช้ THB เท่านั้น (ไม่มีตัวเลือก currency)
+  async function handlePurchase() {
     "use server";
 
     const successUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/purchase-success?session_id={CHECKOUT_SESSION_ID}`;
@@ -52,7 +48,7 @@ export default async function CheckoutPage({
     const checkoutUrl = await createCheckoutSession(
       pluginId,
       1,
-      currency,
+      "THB", // ✅ ใช้ THB เท่านั้น
       successUrl,
       cancelUrl
     );
@@ -71,31 +67,21 @@ export default async function CheckoutPage({
           <p className="text-gray-400">License: Lifetime, Updates Included</p>
         </div>
 
-        {/* Price Display */}
+        {/* Price Display (แสดงแค่ THB) */}
         <PriceDisplay usdPrice={pluginPriceUSD} thbPrice={pluginPriceTHB} />
 
-        {/* Payment Buttons */}
-        <div className="mt-8 space-y-4">
-          {/* ปุ่ม THB */}
-          <form action={createStripeSession.bind(null, "THB")}>
-            <button
-              type="submit"
-              className="w-full bg-gradient-to-r from-cyan-400 to-cyan-500 hover:from-cyan-500 hover:to-cyan-600 text-black font-bold py-4 rounded-xl text-lg"
-            >
-              ชำระด้วยบัตรหรือ PromptPay (THB)
-            </button>
-          </form>
+        {/* ✅ ปุ่ม Purchase เดียว */}
+        <form action={handlePurchase} className="mt-8">
+          <button
+            type="submit"
+            className="w-full bg-gradient-to-r from-cyan-400 to-cyan-500 hover:from-cyan-500 hover:to-cyan-600 text-black font-bold py-4 rounded-xl text-lg"
+          >
+            🛒 Purchase Now
+          </button>
+        </form>
 
-          {/* ปุ่ม USD */}
-          <form action={createStripeSession.bind(null, "USD")}>
-            <button
-              type="submit"
-              className="w-full border border-cyan-400 text-cyan-400 hover:bg-cyan-400/10 font-bold py-4 rounded-xl text-lg"
-            >
-              Pay with Card (USD)
-            </button>
-          </form>
-        </div>
+        {/* ✅ ลบบรรทัด USD, PromptPay ออกทั้งหมด */}
+        
       </div>
     </main>
   );
