@@ -1,10 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 
 export default function Header() {
   const [currency, setCurrency] = useState<"THB" | "USD">("THB");
+  const pathname = usePathname();
+
+  // ✅ แสดง Currency Toggle เฉพาะหน้า /plugins, /pricing และหน้ารายละเอียดปลั๊กอิน
+  const showCurrencyToggle =
+    pathname === "/pricing" || pathname.startsWith("/plugins");
 
   return (
     <header className="bg-gray-900 border-b border-gray-800 px-6 py-4">
@@ -17,45 +23,46 @@ export default function Header() {
 
         {/* Navigation + Currency */}
         <div className="flex items-center gap-6">
-          {/* Navigation Links */}
           <nav className="hidden md:flex items-center gap-8">
             <Link href="/" className="text-gray-300 hover:text-white">
-              Home
+              หน้าแรก
             </Link>
             <Link href="/plugins" className="text-gray-300 hover:text-white">
-              Plugins
+              ปลั๊กอิน
             </Link>
             <Link href="/pricing" className="text-gray-300 hover:text-white">
-              Pricing
+              ราคา
             </Link>
             <Link href="/support" className="text-gray-300 hover:text-white">
-              Support
+              ช่วยเหลือ
             </Link>
           </nav>
 
-          {/* ✅ เพิ่ม Currency Toggle ตรงนี้ */}
-          <div className="hidden md:flex items-center gap-2 border-l border-gray-700 pl-6">
-            <button
-              onClick={() => setCurrency("THB")}
-              className={`px-3 py-1 text-sm rounded-full ${
-                currency === "THB"
-                  ? "bg-cyan-400 text-black"
-                  : "bg-gray-800 text-gray-300"
-              }`}
-            >
-              THB
-            </button>
-            <button
-              onClick={() => setCurrency("USD")}
-              className={`px-3 py-1 text-sm rounded-full ${
-                currency === "USD"
-                  ? "bg-cyan-400 text-black"
-                  : "bg-gray-800 text-gray-300"
-              }`}
-            >
-              USD
-            </button>
-          </div>
+          {/* ✅ แสดง Currency Toggle แบบมีเงื่อนไข */}
+          {showCurrencyToggle && (
+            <div className="hidden md:flex items-center gap-2 border-l border-gray-700 pl-6">
+              <button
+                onClick={() => setCurrency("THB")}
+                className={`px-3 py-1 text-sm rounded-full ${
+                  currency === "THB"
+                    ? "bg-cyan-400 text-black"
+                    : "bg-gray-800 text-gray-300"
+                }`}
+              >
+                THB
+              </button>
+              <button
+                onClick={() => setCurrency("USD")}
+                className={`px-3 py-1 text-sm rounded-full ${
+                  currency === "USD"
+                    ? "bg-cyan-400 text-black"
+                    : "bg-gray-800 text-gray-300"
+                }`}
+              >
+                USD
+              </button>
+            </div>
+          )}
 
           {/* Profile */}
           <div className="flex items-center gap-4">
