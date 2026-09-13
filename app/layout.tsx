@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Header from "./components/header"; // เราจะสร้างไฟล์นี้ในขั้นตอนถัดไป
+import { Analytics } from '@vercel/analytics/next';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -26,6 +27,7 @@ export default function RootLayout({
           <p>© 2026 CRYSTAL LABS. All rights reserved.</p>
         </footer>
 
+        <Analytics />
       </body>
     </html>
   );
