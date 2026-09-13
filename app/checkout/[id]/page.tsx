@@ -96,12 +96,6 @@ export default async function CheckoutPage({
             </button>
           </form>
         </div>
-
-        <div className="text-sm text-gray-500 mt-6">
-          <p>✅ Stripe - ปลอดภัย 100%</p>
-          <p>✅ รองรับ PromptPay (ผ่าน Stripe)</p>
-          <p>✅ การันตีคืนเงินภายใน 30 วัน</p>
-        </div>
       </div>
     </main>
   );
