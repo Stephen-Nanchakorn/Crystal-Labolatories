@@ -1,7 +1,6 @@
 import PriceDisplay from "@/app/components/PriceDisplay";
 import Link from "next/link";
 
-// ข้อมูลปลั๊กอินทั้ง 3 ตัว
 const pluginData: Record<string, any> = {
   "drop-tune": {
     name: "Drop-Tune",
@@ -11,19 +10,19 @@ const pluginData: Record<string, any> = {
       ใช้งานง่าย เหมาะสำหรับมือกีต้าร์, เบส และคีย์บอร์ดที่ต้องการปรับแต่งเสียงแบบดั้งเดิม
       แต่มีประสิทธิภาพสูงในการปรับจูนและการควบคุมเสียง
     `,
-    priceUSD: 0, // ฟรี
+    priceUSD: 0,
+    priceTHB: 0,
+    isFree: true,
     features: [
       "Real-time pitch shifting",
       "Guitar, Bass, Keyboard modes",
       "Analog warmth simulation",
       "Low-latency processing",
       "64-bit floating point",
-      "ARM64 Native for M4 Max",
     ],
     systemRequirements: [
       "MacOS Ventura 13.0+",
       "Pro Tools 2023+, Logic Pro X, Ableton Live 11+",
-      "M1/M2/M3/M4 (ARM64 Native)",
       "2GB RAM minimum",
       "AU, VST3, AAX formats",
     ],
@@ -38,19 +37,19 @@ const pluginData: Record<string, any> = {
       แยกได้ละเอียดถึง 10 ส่วน ตั้งแต่ Vocal, Drum, Bass, Guitar, Piano,
       Strings, Brass, Synthesizer และอีกมากมาย
     `,
-    priceUSD: 29.99,
+    priceUSD: 99,
+    priceTHB: 3249,
+    isFree: false,
     features: [
       "AI-powered stem separation",
       "10 stem types: Vocal, Drum, Bass, Guitar, Piano, Strings, etc.",
       "Batch processing",
       "High-quality 24-bit output",
       "Custom separation models",
-      "GPU acceleration support",
     ],
     systemRequirements: [
       "MacOS Ventura 13.0+",
       "8GB RAM minimum (16GB recommended)",
-      "M-series chip with Neural Engine",
       "200MB free disk space",
       "AU, VST3, AAX formats",
     ],
@@ -65,19 +64,19 @@ const pluginData: Record<string, any> = {
       Guitar และ Bass เสียงแบบ Analog warm tone พร้อม Gate และ Compressor
       ในตัวเพื่อให้เสียงมีความสมบูรณ์แบบในปลั๊กอินเดียว
     `,
-    priceUSD: 19.99,
+    priceUSD: 59,
+    priceTHB: 1949,
+    isFree: false,
     features: [
       "7-band graphic EQ with analog modeling",
       "Built-in Noise Gate",
       "Built-in Compressor",
       "Guitar & Bass optimized presets",
       "Vintage and Modern modes",
-      "Parallel processing control",
     ],
     systemRequirements: [
       "MacOS Ventura 13.0+",
       "Pro Tools 2023+, Logic Pro X, Ableton Live 11+",
-      "M1/M2/M3/M4 (ARM64 Native)",
       "4GB RAM minimum",
       "AU, VST3, AAX formats",
     ],
@@ -94,7 +93,6 @@ export default async function PluginDetailPage({
   const { slug } = await params;
   const plugin = pluginData[slug];
 
-  // ถ้าไม่พบปลั๊กอิน
   if (!plugin) {
     return (
       <main className="min-h-screen bg-black text-white p-8">
@@ -148,7 +146,7 @@ export default async function PluginDetailPage({
 
             {/* Price & Buy Section */}
             <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 mb-8">
-              {plugin.priceUSD === 0 ? (
+              {plugin.isFree ? (
                 <div>
                   <div className="text-3xl font-bold text-green-400 mb-4">
                     FREE! 🎉
@@ -162,7 +160,10 @@ export default async function PluginDetailPage({
                 </div>
               ) : (
                 <>
-                  <PriceDisplay usdPrice={plugin.priceUSD} />
+                  <PriceDisplay
+                    usdPrice={plugin.priceUSD}
+                    thbPrice={plugin.priceTHB}
+                  />
                   <div className="mt-6 space-y-3">
                     <Link
                       href={`/checkout/${slug}`}
@@ -204,7 +205,7 @@ export default async function PluginDetailPage({
               <h2 className="text-2xl font-bold mb-4 text-cyan-400">
                 ข้อกำหนดระบบ
               </h2>
-              <ul className="space-y-3 mb-6">
+              <ul className="space-y-3">
                 {plugin.systemRequirements.map((req: string, index: number) => (
                   <li key={index} className="flex items-start">
                     <span className="text-gray-400 mr-2 mt-1">•</span>
@@ -212,18 +213,6 @@ export default async function PluginDetailPage({
                   </li>
                 ))}
               </ul>
-              <div className="p-4 bg-gray-800 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="text-3xl">🍎</div>
-                  <div>
-                    <div className="font-bold">Optimized for M4 Max</div>
-                    <div className="text-sm text-gray-400">
-                      รัน Native บน Mac Studio M4 Max
-                      (เขียนด้วย JUCE + Xcode)
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
 
             {/* Demo Placeholder */}
