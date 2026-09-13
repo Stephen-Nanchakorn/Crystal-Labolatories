@@ -1,52 +1,94 @@
-import Stripe from 'stripe';
+import Stripe from "stripe";
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2026-08-26.dahlia', // ใช้ version ล่าสุด
+// ✅ Initialize Stripe
+export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
+  apiVersion: "2026-08-26.dahlia",
 });
 
-// คำนวณราคาเป็น THB/USD
-export const getPriceInCurrency = (
-  usdAmount: number,
-  currency: 'THB' | 'USD' = 'THB'
-): number => {
-  const rates = {
-    THB: 35, // Fixed rate 35 บาท/1 USD
-    USD: 1,
+// ✅ Helper: แปลงราคาเป็น cents/satang
+function getPriceInCents(pluginId: string, currency: "THB" | "USD"): number {
+  const prices = {
+    "drop-tune": { thb: 0, usd: 0 },
+    "stem-splitter": { thb: 3249 * 100, usd: 99 * 100 }, // 3249 บาท = 324900 satang
+    "analog-eq": { thb: 1949 * 100, usd: 59 * 100 }, // 1949 บาท = 194900 satang
   };
-  return Math.round(usdAmount * rates[currency]);
-};
+  
+  const plugin = prices[pluginId as keyof typeof prices] || { thb: 0, usd: 0 };
+  return currency === "THB" ? plugin.thb : plugin.usd;
+}
 
-// สร้าง Stripe Checkout Session
-export const createCheckoutSession = async (
-  productId: string,
-  quantity: number = 1,
-  currency: 'THB' | 'USD' = 'THB',
+// ✅ Main function สำหรับสร้าง checkout session
+export async function createCheckoutSession(
+  pluginId: string,
+  quantity: number,
+  currency: "THB" | "USD",
   successUrl: string,
   cancelUrl: string
-) => {
-  const session = await stripe.checkout.sessions.create({
-    payment_method_types: ['card', 'promptpay'], // ✅ Support PromptPay (Stripe)
-    line_items: [
-      {
-        price_data: {
-          currency: currency.toLowerCase(), // 'thb' หรือ 'usd'
-          product_data: {
-            name: `Plugin ${productId}`,
-            // ใส่ metadata เพิ่มตามต้องการ
-          },
-          unit_amount: getPriceInCurrency(1999, currency), // ตัวอย่าง $19.99 USD
-        },
-        quantity,
-      },
-    ],
-    mode: 'payment',
-    success_url: successUrl,
-    cancel_url: cancelUrl,
-    metadata: {
-      product_id: productId,
-      user_id: '...', // ต้องดึงจาก session
-    },
-  });
+) {
+  try {
+    // ✅ ตรวจสอบ environment variables
+    if (!process.env.STRIPE_SECRET_KEY) {
+      console.error("STRIPE_SECRET_KEY is not set");
+      return null;
+    }
 
-  return session.url; // redirect ไป stripe
-};
+    const unitAmount = getPriceInCents(pluginId, currency);
+    
+    // ✅ ตรวจสอบราคา (ต้อง > 0 ยกเว้น drop-tune)
+    if (unitAmount <= 0 && pluginId !== "drop-tune") {
+      console.error("Invalid price for plugin:", pluginId);
+      return null;
+    }
+
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      payment_method_types: currency === "THB" ? ["card", "promptpay"] : ["card"],
+      line_items: [
+        {
+          price_data: {
+            currency: currency.toLowerCase(),
+            product_data: {
+              name: `Crystal Labs - ${pluginId.replace("-", " ").toUpperCase()}`,
+              description: "Lifetime license with free updates",
+            },
+            unit_amount: unitAmount,
+          },
+          quantity,
+        },
+      ],
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+      metadata: {
+        pluginId,
+        currency,
+      },
+    });
+
+    return session.url;
+  } catch (error) {
+    console.error("Stripe checkout error:", error);
+    return null;
+  }
+}
+
+// ✅ Optional: ฟังก์ชันสำหรับสร้าง product ใน Stripe Dashboard
+export async function createStripeProductIfNotExists(pluginId: string, name: string) {
+  try {
+    const products = await stripe.products.list({
+      limit: 100,
+    });
+    
+    const existing = products.data.find(p => p.metadata.pluginId === pluginId);
+    if (existing) return existing.id;
+
+    const product = await stripe.products.create({
+      name,
+      metadata: { pluginId },
+    });
+    
+    return product.id;
+  } catch (error) {
+    console.error("Error creating Stripe product:", error);
+    return null;
+  }
+}

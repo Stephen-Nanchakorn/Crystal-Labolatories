@@ -42,8 +42,11 @@ export default async function CheckoutPage({
   async function handlePurchase() {
     "use server";
 
-    const successUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/purchase-success?session_id={CHECKOUT_SESSION_ID}`;
-    const cancelUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/plugin/${pluginId}`;
+    // ในฟังก์ชัน handlePurchase
+    const baseUrl = "https://crystal-labolatories-zc28.vercel.app";
+    const successUrl = `${baseUrl}/purchase-success?session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = `${baseUrl}/plugins/${pluginId}`;
+
 
     const checkoutUrl = await createCheckoutSession(
       pluginId,
@@ -81,7 +84,7 @@ export default async function CheckoutPage({
         </form>
 
         {/* ✅ ลบบรรทัด USD, PromptPay ออกทั้งหมด */}
-        
+
       </div>
     </main>
   );
