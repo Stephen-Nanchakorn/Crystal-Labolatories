@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import ProfileForm from "@/components/ProfileForm";
-import SignOutButton from "@/components/SignOutButton";
+import ProfileForm from "@/app/components/ProfileForm";
+import SignOutButton from "@/app/components/SignOutButton";
 
 export default async function ProfilePage() {
   const supabase = await createClient();
