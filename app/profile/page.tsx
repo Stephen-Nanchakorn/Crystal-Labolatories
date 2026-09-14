@@ -22,7 +22,9 @@ export default async function ProfilePage() {
         </div>
 
         <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8">
+          {/* ✅ เพิ่ม prop userId={user.id} */}
           <ProfileForm
+            userId={user.id}
             currentEmail={user.email || ""}
             currentName={user.user_metadata?.full_name || ""}
             currentAvatar={user.user_metadata?.avatar_url}
