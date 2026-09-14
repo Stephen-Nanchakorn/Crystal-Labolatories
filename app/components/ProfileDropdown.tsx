@@ -7,7 +7,7 @@ import Image from "next/image";
 import { useApp } from "@/app/context/AppContext";
 import { useRouter } from "next/navigation";
 
-export default function ProfileDropdown() {
+export default function ProfileDropDown() {
   const [isOpen, setIsOpen] = useState(false);
   const [userAvatar, setUserAvatar] = useState<string>("");
   const [userName, setUserName] = useState<string>("");
@@ -50,7 +50,6 @@ export default function ProfileDropdown() {
   }
 
   if (!mounted) {
-    // ✅ Render placeholder เพื่อหลีกเลี่ยง hydration error
     return (
       <div className="flex items-center gap-2">
         <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center">
@@ -62,7 +61,6 @@ export default function ProfileDropdown() {
 
   return (
     <div className="relative" ref={dropdownRef}>
-      {/* Avatar Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 hover:opacity-80 transition-opacity"
@@ -93,10 +91,8 @@ export default function ProfileDropdown() {
         </span>
       </button>
 
-      {/* Dropdown Menu */}
       {isOpen && (
         <div className="absolute right-0 mt-2 w-64 bg-gray-900 border border-gray-800 rounded-xl shadow-xl z-50 py-2">
-          {/* User Info */}
           <div className="px-4 py-3 border-b border-gray-800">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-gray-800 overflow-hidden">
@@ -128,7 +124,6 @@ export default function ProfileDropdown() {
             </div>
           </div>
 
-          {/* Language Selection */}
           <div className="px-4 py-3 border-b border-gray-800">
             <p className="text-xs text-gray-500 mb-2">{t("profile.language")}</p>
             <div className="flex gap-2">
@@ -155,7 +150,6 @@ export default function ProfileDropdown() {
             </div>
           </div>
 
-          {/* Currency Selection */}
           <div className="px-4 py-3 border-b border-gray-800">
             <p className="text-xs text-gray-500 mb-2">{t("profile.currency")}</p>
             <div className="flex gap-2">
@@ -188,7 +182,6 @@ export default function ProfileDropdown() {
             </div>
           </div>
 
-          {/* Sign Out */}
           <button
             onClick={handleSignOut}
             className="w-full px-4 py-3 text-left text-gray-300 hover:bg-gray-800 hover:text-white transition-colors flex items-center gap-2"
