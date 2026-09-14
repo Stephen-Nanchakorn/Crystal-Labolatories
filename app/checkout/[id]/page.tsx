@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { createCheckoutSession } from "@/lib/stripe";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useCurrency } from "@/app/context/CurrencyContext";
+// ❌ ลบบรรทัด import CurrencyContext ออก
 
 const pluginPrices = {
   "drop-tune": { name: "Drop-Tune", usd: 0, thb: 0 },
@@ -14,16 +14,25 @@ const pluginPrices = {
 
 export default function CheckoutPage({ params }: { params: Promise<{ id: string }> }) {
   const [resolvedParams, setResolvedParams] = useState<{ id: string } | null>(null);
-  const { currency, mounted } = useCurrency(); // ✅ ดึงมาจาก hook
+  // ✅ สร้าง state สำหรับสกุลเงินในหน้านี้เลย
+  const [currency, setCurrency] = useState<"THB" | "USD">("THB");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+
+  // ✅ โหลดค่าเก่าจาก localStorage ตอนเปิดหน้า
+  useEffect(() => {
+    const saved = localStorage.getItem("currency");
+    if (saved === "THB" || saved === "USD") {
+      setCurrency(saved);
+    }
+  }, []);
 
   useEffect(() => {
     params.then(setResolvedParams);
   }, [params]);
 
-  if (!resolvedParams || !mounted) return <main className="min-h-screen bg-black text-white p-8"><div className="text-center">กำลังโหลด...</div></main>;
+  if (!resolvedParams) return <main className="min-h-screen bg-black text-white p-8"><div className="text-center">กำลังโหลด...</div></main>;
 
   const { id: pluginId } = resolvedParams;
   const plugin = pluginPrices[pluginId as keyof typeof pluginPrices] || { name: "Unknown", usd: 0, thb: 0 };
@@ -56,7 +65,15 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
           <div className="text-4xl font-bold text-white mb-2">
             {symbol}{price.toLocaleString(currency === "THB" ? "th-TH" : "en-US")}
           </div>
-          <Link href="/profile" className="text-cyan-400 text-sm hover:underline">เปลี่ยนสกุลเงิน</Link>
+          <div className="text-sm text-gray-500">
+            สกุลเงินปัจจุบัน:{" "}
+            <button
+              onClick={() => setCurrency(currency === "THB" ? "USD" : "THB")}
+              className="text-cyan-400 hover:text-cyan-300"
+            >
+              {currency === "THB" ? "บาทไทย (THB)" : "ดอลลาร์สหรัฐ (USD)"}
+            </button>
+          </div>
         </div>
 
         <form onSubmit={(e) => { e.preventDefault(); handlePurchase(); }}>

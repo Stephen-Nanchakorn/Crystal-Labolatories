@@ -161,7 +161,7 @@ export default async function PluginDetailPage({
               ) : (
                 <>
                   {/* PriceDisplay - ใช้ pluginId แทน */}
-                  <PriceDisplay pluginId={slug as any} />
+                  <PriceDisplay pluginId={slug as "drop-tune" | "stem-splitter" | "analog-eq"} currency="THB" />
                   <div className="mt-6 space-y-3">
                     <Link
                       href={`/checkout/${slug}`}
