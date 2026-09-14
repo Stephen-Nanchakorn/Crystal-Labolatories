@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useApp } from "@/app/context/AppContext";
-import ProfileDropdown from "@/app/components/ProfileDropDown";
+import ProfileDropDown from "@/app/components/ProfileDropDown"; // ✅ ตรงกับชื่อไฟล์
 
 export default function Header() {
   const pathname = usePathname();
