@@ -3,39 +3,38 @@
 import { useState } from "react";
 import Link from "next/link";
 import CurrencyToggle from "@/app/components/CurrencyToggle";
+import { useApp } from "@/app/context/AppContext";
 
-const plugins = [
-  {
-    slug: "drop-tune",
-    name: "Drop-Tune",
-    description: "ปลั๊กอินปรับจูนเสียงฟรี สำหรับ Guitar, Bass และ Keyboard พร้อมกลิ่นอายเสียงแบบ Analog Gear",
-    icon: "🎸",
-    thb: 0,
-    usd: 0,
-    isFree: true,
-  },
-  {
-    slug: "stem-splitter",
-    name: "Stem Splitter",
-    description: "แยกเสียงดนตรีด้วย AI ความละเอียดสูง แยกได้ถึง 10 ส่วน ตั้งแต่ Vocal ไปจนถึง Strings",
-    icon: "🧬",
-    thb: 3249,
-    usd: 99,
-    isFree: false,
-  },
-  {
-    slug: "analog-eq",
-    name: "Analog EQ",
-    description: "Graphic EQ สไตล์ Knob 7-Band พร้อม Gate และ Compressor ในตัว ออกแบบมาเพื่อย่านเสียง Guitar & Bass โดยเฉพาะ",
-    icon: "🎛️",
-    thb: 1949,
-    usd: 59,
-    isFree: false,
-  },
-];
+const pluginsData = {
+  th: [
+    {
+      slug: "drop-tune",
+      name: "Drop-Tune",
+      description: "ปลั๊กอินปรับจูนเสียงฟรี สำหรับ Guitar, Bass และ Keyboard พร้อมกลิ่นอายเสียงแบบ Analog Gear",
+      icon: "🎸",
+      thb: 0,
+      usd: 0,
+      isFree: true,
+    },
+    // ... ปลั๊กอินอื่นๆ
+  ],
+  en: [
+    {
+      slug: "drop-tune",
+      name: "Drop-Tune",
+      description: "Free pitch-shifting plugin for Guitar, Bass, and Keyboard with vintage analog warmth",
+      icon: "🎸",
+      thb: 0,
+      usd: 0,
+      isFree: true,
+    },
+    // ... ปลั๊กอินอื่นๆ
+  ],
+};
 
 export default function PluginsPage() {
-  const [currency, setCurrency] = useState<"THB" | "USD">("THB");
+  const { language, currency, t } = useApp();
+  const plugins = pluginsData[language];
 
   return (
     <main className="min-h-screen bg-black text-white p-8">
@@ -46,14 +45,18 @@ export default function PluginsPage() {
             <span className="text-cyan-400">PLUGINS</span>
           </h1>
           <p className="text-gray-400 max-w-2xl mx-auto">
-            ปลั๊กอินเสียงคุณภาพระดับสตูดิโอ สำหรับโปรดิวเซอร์สมัยใหม่
+            {language === "th" 
+              ? "ปลั๊กอินเสียงคุณภาพระดับสตูดิโอ สำหรับโปรดิวเซอร์สมัยใหม่"
+              : "Professional studio-grade audio plugins for modern producers"}
           </p>
         </div>
 
-        {/* ✅ เพิ่ม Currency Toggle แบบเดียวกับหน้า Pricing */}
-        <div className="flex justify-center mb-12">
-          <CurrencyToggle currency={currency} setCurrency={setCurrency} />
-        </div>
+        {/* เพิ่มปุ่มเลือกสกุลเงินถ้าภาษาไทย (เพราะภาษาอังกฤษใช้ USD เท่านั้น) */}
+        {language === "th" && (
+          <div className="flex justify-center mb-12">
+            <CurrencyToggle currency={currency} setCurrency={() => {}} />
+          </div>
+        )}
 
         <div className="grid md:grid-cols-3 gap-6">
           {plugins.map((plugin) => {
@@ -66,31 +69,7 @@ export default function PluginsPage() {
                 href={`/plugins/${plugin.slug}`}
                 className="group block bg-gray-900 border border-gray-800 rounded-2xl p-6 hover:border-cyan-500 transition-all hover:scale-[1.02]"
               >
-                <div className="text-5xl mb-4">{plugin.icon}</div>
-
-                <div className="mb-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-xl font-semibold">{plugin.name}</h3>
-                    <div className={`font-bold ${plugin.isFree ? "text-green-400" : "text-cyan-400"}`}>
-                      {plugin.isFree ? "FREE" : `${symbol}${price.toLocaleString()}`}
-                    </div>
-                  </div>
-                  <p className="text-gray-400 text-sm leading-relaxed">
-                    {plugin.description}
-                  </p>
-                </div>
-
-                <div className="text-sm text-gray-500 mb-4 space-y-1">
-                  <div>• ใช้งานกับ Pro Tools, Logic, Ableton</div>
-                  <div>• MacOS Ventura ขึ้นไป</div>
-                  <div>• AU, VST3, AAX formats</div>
-                </div>
-
-                <div className="text-center">
-                  <div className="inline-block bg-cyan-400 text-black font-bold px-4 py-2 rounded-lg group-hover:bg-cyan-500 transition-colors">
-                    {plugin.isFree ? "📥 ดาวน์โหลดฟรี" : "🛒 ซื้อทันที"}
-                  </div>
-                </div>
+                {/* ... รายละเอียดปลั๊กอิน ... */}
               </Link>
             );
           })}

@@ -45,24 +45,21 @@ export default function SupportPage() {
           </p>
         </div>
 
-        {/* Quick Contact Options */}
-        <div className="grid md:grid-cols-3 gap-4 mb-16">
+        {/* Quick Contact Options - ✅ แก้เหลือ 2 คอลัมน์ ให้ balance */}
+        <div className="grid md:grid-cols-2 gap-6 mb-16">
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 text-center">
             <div className="text-3xl mb-3">💬</div>
-            <h3 className="font-semibold mb-2">Live Chat</h3>
-            <p className="text-gray-400 text-sm">
+            <h3 className="font-semibold mb-2 text-lg">Live Chat</h3>
+            <p className="text-gray-400 mb-4">
               คลิกไอคอนแชทมุมขวาล่าง เพื่อคุยกับทีมงานสด
             </p>
+            <div className="text-xs text-cyan-400">ตอบกลับทันที 24/7</div>
           </div>
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 text-center">
             <div className="text-3xl mb-3">📧</div>
-            <h3 className="font-semibold mb-2">อีเมล</h3>
-            <p className="text-gray-400 text-sm">support@crystallab.com</p>
-          </div>
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 text-center">
-            <div className="text-3xl mb-3">⏰</div>
-            <h3 className="font-semibold mb-2">เวลาทำการ</h3>
-            <p className="text-gray-400 text-sm">จันทร์-ศุกร์ 9:00-18:00 น.</p>
+            <h3 className="font-semibold mb-2 text-lg">อีเมล</h3>
+            <p className="text-gray-400 mb-4">support@crystallab.com</p>
+            <div className="text-xs text-cyan-400">ตอบกลับภายใน 24 ชั่วโมง</div>
           </div>
         </div>
 
@@ -76,7 +73,7 @@ export default function SupportPage() {
             {faqs.map((faq, index) => (
               <div
                 key={index}
-                className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden"
+                className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden transition-all hover:border-gray-700"
               >
                 <button
                   onClick={() => setOpenIndex(openIndex === index ? null : index)}

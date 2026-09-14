@@ -15,9 +15,9 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType>({
   language: "th",
-  setLanguage: () => {},
+  setLanguage: () => { },
   currency: "THB",
-  setCurrency: () => {},
+  setCurrency: () => { },
   t: () => "",
 });
 
@@ -36,7 +36,7 @@ const translations: Record<Language, TranslationDict> = {
     "header.support": "ช่วยเหลือ",
     "header.profile": "โปรไฟล์",
     "header.language": "ภาษา",
-    
+
     // Profile Menu
     "profile.settings": "ตั้งค่าบัญชี",
     "profile.language": "ภาษา",
@@ -46,7 +46,7 @@ const translations: Record<Language, TranslationDict> = {
     "profile.currency.thb": "บาทไทย",
     "profile.currency.usd": "ดอลลาร์สหรัฐ",
     "profile.signout": "ออกจากระบบ",
-    
+
     // Common
     "common.buy": "ซื้อทันที",
     "common.free": "ฟรี",
@@ -55,7 +55,7 @@ const translations: Record<Language, TranslationDict> = {
     "common.currency": "สกุลเงิน",
     "common.thb": "บาท",
     "common.usd": "ดอลลาร์",
-    
+
     // Support Page
     "support.title": "ศูนย์ช่วยเหลือ",
     "support.subtitle": "มีคำถาม? เราพร้อมช่วยเหลือคุณตลอด 24 ชั่วโมง",
@@ -73,7 +73,7 @@ const translations: Record<Language, TranslationDict> = {
     "header.support": "Support",
     "header.profile": "Profile",
     "header.language": "Language",
-    
+
     // Profile Menu
     "profile.settings": "Account Settings",
     "profile.language": "Language",
@@ -83,7 +83,7 @@ const translations: Record<Language, TranslationDict> = {
     "profile.currency.thb": "Thai Baht",
     "profile.currency.usd": "US Dollar",
     "profile.signout": "Sign Out",
-    
+
     // Common
     "common.buy": "Buy Now",
     "common.free": "FREE",
@@ -92,7 +92,7 @@ const translations: Record<Language, TranslationDict> = {
     "common.currency": "Currency",
     "common.thb": "THB",
     "common.usd": "USD",
-    
+
     // Support Page
     "support.title": "Support Center",
     "support.subtitle": "Have questions? We're here to help 24/7",
@@ -113,21 +113,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // โหลดค่าเก่าจาก localStorage
     const savedLang = localStorage.getItem("language") as Language;
     const savedCurrency = localStorage.getItem("currency") as Currency;
-    
+
     if (savedLang === "th" || savedLang === "en") {
       setLanguageState(savedLang);
     } else {
-      // ถ้ายังไม่มีค่าใน localStorage ให้ตรวจสอบภาษาเบราว์เซอร์
-      const browserLang = navigator.language.startsWith("th") ? "th" : "en";
-      setLanguageState(browserLang);
+      // ✅ เช็คว่าเราอยู่บน client ก่อน (ป้องกัน server-side error)
+      if (typeof window !== "undefined") {
+        // ถ้ายังไม่มีค่าใน localStorage ให้ตรวจสอบภาษาเบราว์เซอร์
+        const browserLang = window.navigator.language.startsWith("th") ? "th" : "en";
+        setLanguageState(browserLang);
+      }
     }
-    
+
     // ตั้งค่าสกุลเงินตามภาษา
     const defaultCurrency = language === "en" ? "USD" : "THB";
     setCurrencyState(savedCurrency === "THB" || savedCurrency === "USD" ? savedCurrency : defaultCurrency);
-    
+
     setMounted(true);
-  }, [language]); // ✅ เพิ่ม dependency เพื่อ re-run เมื่อ language เปลี่ยน
+  }, [language]);
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
