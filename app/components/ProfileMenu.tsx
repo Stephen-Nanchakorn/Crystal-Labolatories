@@ -7,8 +7,8 @@ import Image from "next/image";
 import { useApp } from "@/app/context/AppContext";
 import { useRouter } from "next/navigation";
 
-export default function ProfileDropDown() {
-  const [isOpen, setIsOpen] = useState(false);
+export default function ProfileMenu() {
+    const [isOpen, setIsOpen] = useState(false);
   const [userAvatar, setUserAvatar] = useState<string>("");
   const [userName, setUserName] = useState<string>("");
   const [mounted, setMounted] = useState(false);
