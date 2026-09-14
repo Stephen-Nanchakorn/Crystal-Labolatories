@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { useCurrency } from "@/app/hooks/useCurrency";
+import CurrencyToggle from "@/app/components/CurrencyToggle";
 
 const plugins = [
   {
@@ -34,12 +35,12 @@ const plugins = [
 ];
 
 export default function PluginsPage() {
-  const { currency, mounted } = useCurrency();
+  const [currency, setCurrency] = useState<"THB" | "USD">("THB");
 
   return (
     <main className="min-h-screen bg-black text-white p-8">
       <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-16">
+        <div className="text-center mb-10">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
             <span className="text-white">CRYSTAL</span>{" "}
             <span className="text-cyan-400">PLUGINS</span>
@@ -49,9 +50,13 @@ export default function PluginsPage() {
           </p>
         </div>
 
+        {/* ✅ เพิ่ม Currency Toggle แบบเดียวกับหน้า Pricing */}
+        <div className="flex justify-center mb-12">
+          <CurrencyToggle currency={currency} setCurrency={setCurrency} />
+        </div>
+
         <div className="grid md:grid-cols-3 gap-6">
           {plugins.map((plugin) => {
-            // ✅ คำนวณราคาตามสกุลเงินที่เลือก
             const price = currency === "THB" ? plugin.thb : plugin.usd;
             const symbol = currency === "THB" ? "฿" : "$";
 
@@ -67,7 +72,7 @@ export default function PluginsPage() {
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="text-xl font-semibold">{plugin.name}</h3>
                     <div className={`font-bold ${plugin.isFree ? "text-green-400" : "text-cyan-400"}`}>
-                      {plugin.isFree ? "FREE" : mounted ? `${symbol}${price.toLocaleString()}` : "..."}
+                      {plugin.isFree ? "FREE" : `${symbol}${price.toLocaleString()}`}
                     </div>
                   </div>
                   <p className="text-gray-400 text-sm leading-relaxed">

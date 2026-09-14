@@ -5,10 +5,8 @@ import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import Image from "next/image";
-import { useCurrency } from "@/app/hooks/useCurrency"; // ✅ ใช้ hook
 
 export default function Header() {
-  const { currency, setCurrency, mounted } = useCurrency(); // ✅ ดึงมาจาก hook
   const [userAvatar, setUserAvatar] = useState<string>("");
   const [userName, setUserName] = useState<string>("");
   const pathname = usePathname();
@@ -25,9 +23,6 @@ export default function Header() {
     getUser();
   }, [supabase.auth]);
 
-  const showCurrencyToggle =
-    pathname === "/pricing" || pathname.startsWith("/plugins");
-
   return (
     <header className="bg-gray-900 border-b border-gray-800 px-6 py-4">
       <div className="max-w-7xl mx-auto flex justify-between items-center">
@@ -38,28 +33,30 @@ export default function Header() {
 
         <div className="flex items-center gap-6">
           <nav className="hidden md:flex items-center gap-8">
-            <Link href="/" className={`text-sm ${pathname === "/" ? "text-white" : "text-gray-300 hover:text-white"}`}>หน้าแรก</Link>
-            <Link href="/plugins" className={`text-sm ${pathname.startsWith("/plugins") ? "text-white" : "text-gray-300 hover:text-white"}`}>ปลั๊กอิน</Link>
-            <Link href="/pricing" className={`text-sm ${pathname === "/pricing" ? "text-white" : "text-gray-300 hover:text-white"}`}>ราคา</Link>
-            <Link href="/support" className="text-sm text-gray-300 hover:text-white">ช่วยเหลือ</Link>
+            <Link
+              href="/"
+              className={`text-sm ${pathname === "/" ? "text-white" : "text-gray-300 hover:text-white"}`}
+            >
+              หน้าแรก
+            </Link>
+            <Link
+              href="/plugins"
+              className={`text-sm ${pathname.startsWith("/plugins") ? "text-white" : "text-gray-300 hover:text-white"}`}
+            >
+              ปลั๊กอิน
+            </Link>
+            <Link
+              href="/pricing"
+              className={`text-sm ${pathname === "/pricing" ? "text-white" : "text-gray-300 hover:text-white"}`}
+            >
+              ราคา
+            </Link>
+            <Link href="/support" className="text-sm text-gray-300 hover:text-white">
+              ช่วยเหลือ
+            </Link>
           </nav>
 
-          {showCurrencyToggle && mounted && (
-            <div className="hidden md:flex items-center gap-2 border-l border-gray-700 pl-6">
-              <button
-                onClick={() => setCurrency("THB")}
-                className={`px-3 py-1 text-sm rounded-full transition-colors ${currency === "THB" ? "bg-cyan-400 text-black font-medium" : "bg-gray-800 text-gray-300"}`}
-              >
-                THB
-              </button>
-              <button
-                onClick={() => setCurrency("USD")}
-                className={`px-3 py-1 text-sm rounded-full transition-colors ${currency === "USD" ? "bg-cyan-400 text-black font-medium" : "bg-gray-800 text-gray-300"}`}
-              >
-                USD
-              </button>
-            </div>
-          )}
+          {/* ❌ ลบ Currency Toggle ออกจาก Header ทั้งหมดแล้ว */}
 
           <Link href="/profile" className="group relative flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-gray-800 overflow-hidden border-2 border-transparent group-hover:border-cyan-400 transition-all">
@@ -69,7 +66,11 @@ export default function Header() {
                 <div className="w-full h-full flex items-center justify-center text-gray-300">👤</div>
               )}
             </div>
-            {userName && <span className="hidden md:inline text-sm text-gray-300 group-hover:text-white">{userName}</span>}
+            {userName && (
+              <span className="hidden md:inline text-sm text-gray-300 group-hover:text-white">
+                {userName}
+              </span>
+            )}
           </Link>
         </div>
       </div>

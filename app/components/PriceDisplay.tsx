@@ -1,6 +1,6 @@
 "use client";
 
-import { useCurrency } from "@/app/hooks/useCurrency";
+import { useCurrency } from "@/app/context/CurrencyContext"; // ✅ เปลี่ยนตรงนี้
 
 const priceData = {
   "drop-tune": { thb: 0, usd: 0 },
@@ -22,8 +22,6 @@ export default function PriceDisplay({
   return (
     <div className="border border-gray-800 rounded-lg p-4">
       <h3 className="font-semibold text-cyan-400 mb-3">ราคา</h3>
-
-      {/* ✅ แสดงราคาอย่างเดียว ไม่มี (บาท) และไม่มี ≈ USD */}
       <div className="text-3xl font-bold text-white">
         {mounted ? (
           <>

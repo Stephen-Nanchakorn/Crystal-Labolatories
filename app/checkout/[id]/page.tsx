@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { createCheckoutSession } from "@/lib/stripe";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useCurrency } from "@/app/hooks/useCurrency"; // ✅ ใช้ hook
+import { useCurrency } from "@/app/context/CurrencyContext";
 
 const pluginPrices = {
   "drop-tune": { name: "Drop-Tune", usd: 0, thb: 0 },
