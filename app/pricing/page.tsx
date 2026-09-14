@@ -101,10 +101,6 @@ export default function PricingPage() {
             );
           })}
         </div>
-
-        <div className="text-center mt-10 text-sm text-gray-400">
-          ✅ การันตีคืนเงินภายใน 30 วัน • ✅ License ตลอดชีพ • ✅ อัปเดตฟรี
-        </div>
       </div>
     </main>
   );

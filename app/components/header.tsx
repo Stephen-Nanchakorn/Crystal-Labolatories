@@ -16,7 +16,17 @@ export default function Header() {
     async function getUser() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        setUserAvatar(user.user_metadata?.avatar_url || "");
+        // ✅ เช็คว่าล็อกอินด้วย Google หรือไม่
+        const isGoogleUser = user.app_metadata?.provider === "google";
+
+        if (isGoogleUser) {
+          // ล็อกอินด้วย Google -> ใช้รูปจาก Google โดยตรง
+          setUserAvatar(user.user_metadata?.avatar_url || "");
+        } else {
+          // สมัครแบบปกติ -> ใช้เฉพาะรูปที่อัปโหลดเองเท่านั้น
+          setUserAvatar(user.user_metadata?.avatar_url || "");
+        }
+
         setUserName(user.user_metadata?.full_name || "");
       }
     }
@@ -26,9 +36,10 @@ export default function Header() {
   return (
     <header className="bg-gray-900 border-b border-gray-800 px-6 py-4">
       <div className="max-w-7xl mx-auto flex justify-between items-center">
+        {/* ✅ เปลี่ยนชื่อเป็น Crystal Lab */}
         <Link href="/" className="text-xl font-bold hover:opacity-90">
-          <span className="text-white">CRYSTAL</span>
-          <span className="text-cyan-400">LABS</span>
+          <span className="text-white">Crystal</span>{" "}
+          <span className="text-cyan-400">Lab</span>
         </Link>
 
         <div className="flex items-center gap-6">
@@ -56,12 +67,17 @@ export default function Header() {
             </Link>
           </nav>
 
-          {/* ❌ ลบ Currency Toggle ออกจาก Header ทั้งหมดแล้ว */}
-
           <Link href="/profile" className="group relative flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-gray-800 overflow-hidden border-2 border-transparent group-hover:border-cyan-400 transition-all">
               {userAvatar ? (
-                <Image src={userAvatar} alt="Profile" width={32} height={32} className="w-full h-full object-cover" />
+                <Image
+                  src={userAvatar}
+                  alt="Profile"
+                  width={32}
+                  height={32}
+                  className="w-full h-full object-cover"
+                  unoptimized
+                />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-gray-300">👤</div>
               )}

@@ -1,23 +1,35 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
+import { createClient } from "@/lib/supabase/client";
 import Image from "next/image";
 
 export default function AvatarUploader({
+  userId,
   currentAvatar,
   onAvatarChange,
 }: {
+  userId: string;
   currentAvatar?: string;
-  onAvatarChange: (base64: string) => void;
+  onAvatarChange: (url: string) => void;
 }) {
   const [preview, setPreview] = useState<string>(currentAvatar || "");
   const [isDragging, setIsDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const supabase = createClient();
 
   const processFile = useCallback(
-    (file: File) => {
+    async (file: File) => {
       setError("");
+
+      // ✅ ตรวจสอบว่าผู้ใช้ login แล้ว
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setError("กรุณาล็อกอินก่อนอัปโหลดรูป");
+        return;
+      }
 
       // ✅ ตรวจสอบชนิดไฟล์
       if (!file.type.startsWith("image/")) {
@@ -31,15 +43,48 @@ export default function AvatarUploader({
         return;
       }
 
+      // แสดง preview ทันทีระหว่างอัปโหลด
       const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64 = reader.result as string;
-        setPreview(base64);
-        onAvatarChange(base64);
-      };
+      reader.onloadend = () => setPreview(reader.result as string);
       reader.readAsDataURL(file);
+
+      setUploading(true);
+
+      try {
+        // ✅ ใช้ user.id แทน userId prop (ปลอดภัยกว่า)
+        const fileExt = file.name.split(".").pop();
+        const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+
+        // ✅ ลบไฟล์เก่าถ้ามี (optional)
+        if (currentAvatar?.includes(user.id)) {
+          const oldFileName = currentAvatar.split("/").pop();
+          if (oldFileName) {
+            await supabase.storage.from("avatars").remove([oldFileName]);
+          }
+        }
+
+        const { error: uploadError } = await supabase.storage
+          .from("avatars")
+          .upload(fileName, file, {
+            cacheControl: "3600",
+            upsert: true,
+          });
+
+        if (uploadError) throw uploadError;
+
+        // ✅ ดึง URL สาธารณะ
+        const { data } = supabase.storage.from("avatars").getPublicUrl(fileName);
+
+        onAvatarChange(data.publicUrl);
+        setPreview(data.publicUrl);
+      } catch (err: any) {
+        console.error("Upload error:", err);
+        setError(`อัปโหลดไม่สำเร็จ: ${err.message}`);
+      } finally {
+        setUploading(false);
+      }
     },
-    [onAvatarChange]
+    [supabase, currentAvatar, onAvatarChange]
   );
 
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
@@ -57,7 +102,6 @@ export default function AvatarUploader({
   return (
     <div>
       <div className="flex items-center gap-6">
-        {/* Preview รูปวงกลม */}
         <div className="relative w-24 h-24 rounded-full bg-gray-800 overflow-hidden border-4 border-gray-700 flex-shrink-0">
           {preview ? (
             <Image
@@ -66,50 +110,37 @@ export default function AvatarUploader({
               width={96}
               height={96}
               className="w-full h-full object-cover"
+              unoptimized
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-4xl text-gray-500">
-              👤
+            <div className="w-full h-full flex items-center justify-center text-4xl text-gray-500">👤</div>
+          )}
+          {uploading && (
+            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+              <span className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></span>
             </div>
           )}
         </div>
 
-        {/* พื้นที่ Drag & Drop / คลิกเพื่ออัปโหลด */}
         <div
           onClick={() => fileInputRef.current?.click()}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setIsDragging(true);
-          }}
+          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
           onDragLeave={() => setIsDragging(false)}
           onDrop={handleDrop}
-          className={`flex-1 border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${
-            isDragging
-              ? "border-cyan-400 bg-cyan-400/10"
-              : "border-gray-700 hover:border-gray-500"
-          }`}
+          className={`flex-1 border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${isDragging ? "border-cyan-400 bg-cyan-400/10" : "border-gray-700 hover:border-gray-500"
+            }`}
         >
           <div className="text-3xl mb-2">📷</div>
           <p className="text-sm text-gray-300">
             ลากไฟล์รูปมาวาง หรือ <span className="text-cyan-400">คลิกเพื่อเลือกไฟล์</span>
           </p>
-          <p className="text-xs text-gray-500 mt-1">
-            รองรับ JPG, PNG (ไม่เกิน 5MB)
-          </p>
+          <p className="text-xs text-gray-500 mt-1">รองรับ JPG, PNG (ไม่เกิน 5MB)</p>
         </div>
 
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          onChange={handleFileSelect}
-          className="hidden"
-        />
+        <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
       </div>
 
-      {error && (
-        <p className="text-red-400 text-sm mt-2">{error}</p>
-      )}
+      {error && <p className="text-red-400 text-sm mt-2">{error}</p>}
     </div>
   );
 }

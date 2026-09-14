@@ -6,10 +6,12 @@ import { useRouter } from "next/navigation";
 import AvatarUploader from "@/app/components/AvatarUploader";
 
 export default function ProfileForm({
+  userId,
   currentEmail,
   currentName,
   currentAvatar,
 }: {
+  userId: string;
   currentEmail: string;
   currentName: string;
   currentAvatar?: string;
@@ -26,6 +28,7 @@ export default function ProfileForm({
     setLoading(true);
     setMessage("");
 
+    // ✅ ตอนนี้ avatar เป็นแค่ URL สั้นๆ ไม่ใช่ base64 แล้ว จึงไม่เกิน 1MB แน่นอน
     const { error } = await supabase.auth.updateUser({
       data: { full_name: name, avatar_url: avatar },
     });
@@ -47,12 +50,10 @@ export default function ProfileForm({
 
       {isEditing ? (
         <div className="space-y-4">
-          <AvatarUploader currentAvatar={avatar} onAvatarChange={setAvatar} />
+          <AvatarUploader userId={userId} currentAvatar={avatar} onAvatarChange={setAvatar} />
 
           <div>
-            <label className="text-sm text-gray-400 block mb-1">
-              ชื่อที่แสดง
-            </label>
+            <label className="text-sm text-gray-400 block mb-1">ชื่อที่แสดง</label>
             <input
               type="text"
               value={name}
@@ -63,19 +64,11 @@ export default function ProfileForm({
           </div>
 
           <div className="flex gap-2">
-            <button
-              onClick={handleSave}
-              disabled={loading}
-              className="bg-cyan-400 hover:bg-cyan-500 text-black font-semibold px-4 py-2 rounded-lg"
-            >
+            <button onClick={handleSave} disabled={loading} className="bg-cyan-400 hover:bg-cyan-500 text-black font-semibold px-4 py-2 rounded-lg">
               {loading ? "กำลังบันทึก..." : "บันทึก"}
             </button>
             <button
-              onClick={() => {
-                setIsEditing(false);
-                setName(currentName);
-                setAvatar(currentAvatar || "");
-              }}
+              onClick={() => { setIsEditing(false); setName(currentName); setAvatar(currentAvatar || ""); }}
               className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg"
             >
               ยกเลิก
@@ -94,10 +87,7 @@ export default function ProfileForm({
           <div className="flex-1">
             <div className="flex items-center justify-between">
               <span className="text-lg">{name || "ยังไม่ได้ตั้งชื่อ"}</span>
-              <button
-                onClick={() => setIsEditing(true)}
-                className="text-cyan-400 hover:text-cyan-300 text-sm"
-              >
+              <button onClick={() => setIsEditing(true)} className="text-cyan-400 hover:text-cyan-300 text-sm">
                 ✏️ แก้ไขโปรไฟล์
               </button>
             </div>
