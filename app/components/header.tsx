@@ -47,7 +47,7 @@ export default function Header() {
           </nav>
 
           {/* ✅ ใช้ ProfileDropdown จริงๆ */}
-          <ProfileDropdown />
+          <ProfileDropDown />
         </div>
       </div>
     </header>
