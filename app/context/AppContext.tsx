@@ -10,97 +10,53 @@ interface AppContextType {
   setLanguage: (lang: Language) => void;
   currency: Currency;
   setCurrency: (curr: Currency) => void;
+  mounted: boolean;
   t: (key: string) => string;
 }
 
 const AppContext = createContext<AppContextType>({
   language: "th",
-  setLanguage: () => { },
+  setLanguage: () => {},
   currency: "THB",
-  setCurrency: () => { },
+  setCurrency: () => {},
+  mounted: false,
   t: () => "",
 });
 
-// ✅ ระบุ type ให้ชัดเจน
 interface TranslationDict {
   [key: string]: string;
 }
 
-// ✅ ระบุ type ให้ translations object
 const translations: Record<Language, TranslationDict> = {
   th: {
-    // Header
     "header.home": "หน้าแรก",
     "header.plugins": "ปลั๊กอิน",
     "header.pricing": "ราคา",
     "header.support": "ช่วยเหลือ",
-    "header.profile": "โปรไฟล์",
-    "header.language": "ภาษา",
-
-    // Profile Menu
     "profile.settings": "ตั้งค่าบัญชี",
     "profile.language": "ภาษา",
-    "profile.language.th": "ไทย",
-    "profile.language.en": "English",
     "profile.currency": "สกุลเงิน",
-    "profile.currency.thb": "บาทไทย",
-    "profile.currency.usd": "ดอลลาร์สหรัฐ",
     "profile.signout": "ออกจากระบบ",
-
-    // Common
     "common.buy": "ซื้อทันที",
     "common.free": "ฟรี",
-    "common.download": "ดาวน์โหลด",
-    "common.price": "ราคา",
-    "common.currency": "สกุลเงิน",
+    "common.download": "ดาวน์โหลดฟรี",
     "common.thb": "บาท",
     "common.usd": "ดอลลาร์",
-
-    // Support Page
-    "support.title": "ศูนย์ช่วยเหลือ",
-    "support.subtitle": "มีคำถาม? เราพร้อมช่วยเหลือคุณตลอด 24 ชั่วโมง",
-    "support.livechat": "Live Chat",
-    "support.email": "อีเมล",
-    "support.faq": "คำถามที่พบบ่อย",
-    "support.notfound": "ยังไม่พบคำตอบที่ต้องการ?",
-    "support.startchat": "เริ่มแชทกับทีมงาน",
   },
   en: {
-    // Header
     "header.home": "Home",
     "header.plugins": "Plugins",
     "header.pricing": "Pricing",
     "header.support": "Support",
-    "header.profile": "Profile",
-    "header.language": "Language",
-
-    // Profile Menu
     "profile.settings": "Account Settings",
     "profile.language": "Language",
-    "profile.language.th": "ไทย",
-    "profile.language.en": "English",
     "profile.currency": "Currency",
-    "profile.currency.thb": "Thai Baht",
-    "profile.currency.usd": "US Dollar",
     "profile.signout": "Sign Out",
-
-    // Common
     "common.buy": "Buy Now",
     "common.free": "FREE",
-    "common.download": "Download",
-    "common.price": "Price",
-    "common.currency": "Currency",
+    "common.download": "Download Free",
     "common.thb": "THB",
     "common.usd": "USD",
-
-    // Support Page
-    "support.title": "Support Center",
-    "support.subtitle": "Have questions? We're here to help 24/7",
-    "support.livechat": "Live Chat",
-    "support.email": "Email",
-    "support.faq": "Frequently Asked Questions",
-    "support.notfound": "Still can't find what you need?",
-    "support.startchat": "Start Chat with Team",
   },
 };
 
@@ -109,49 +65,46 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [currency, setCurrencyState] = useState<Currency>("THB");
   const [mounted, setMounted] = useState(false);
 
+  // โหลดค่าที่เคยตั้งไว้ตอนเปิดเว็บครั้งแรกเท่านั้น
   useEffect(() => {
-    // โหลดค่าเก่าจาก localStorage
-    const savedLang = localStorage.getItem("language") as Language;
-    const savedCurrency = localStorage.getItem("currency") as Currency;
+    const savedLang = localStorage.getItem("language") as Language | null;
+    const savedCurrency = localStorage.getItem("currency") as Currency | null;
 
-    if (savedLang === "th" || savedLang === "en") {
-      setLanguageState(savedLang);
+    const initialLang = savedLang === "th" || savedLang === "en" ? savedLang : "th";
+    setLanguageState(initialLang);
+
+    // ✅ ถ้าเคยเลือกสกุลเงินไว้เอง ใช้ค่านั้น ไม่งั้นใช้ default ตามภาษา
+    if (savedCurrency === "THB" || savedCurrency === "USD") {
+      setCurrencyState(savedCurrency);
     } else {
-      // ✅ เช็คว่าเราอยู่บน client ก่อน (ป้องกัน server-side error)
-      if (typeof window !== "undefined") {
-        // ถ้ายังไม่มีค่าใน localStorage ให้ตรวจสอบภาษาเบราว์เซอร์
-        const browserLang = window.navigator.language.startsWith("th") ? "th" : "en";
-        setLanguageState(browserLang);
-      }
+      setCurrencyState(initialLang === "en" ? "USD" : "THB");
     }
 
-    // ตั้งค่าสกุลเงินตามภาษา
-    const defaultCurrency = language === "en" ? "USD" : "THB";
-    setCurrencyState(savedCurrency === "THB" || savedCurrency === "USD" ? savedCurrency : defaultCurrency);
-
     setMounted(true);
-  }, [language]);
+  }, []);
 
-  const setLanguage = (lang: Language) => {
+  // ✅ เปลี่ยนภาษา -> reset สกุลเงินเป็น default ของภาษานั้นเสมอ
+  function setLanguage(lang: Language) {
     setLanguageState(lang);
     localStorage.setItem("language", lang);
-    // เปลี่ยนสกุลเงินอัตโนมัติตามภาษา
-    const newCurrency = lang === "en" ? "USD" : "THB";
-    setCurrency(newCurrency);
-  };
 
-  const setCurrency = (curr: Currency) => {
+    const defaultCurrency: Currency = lang === "en" ? "USD" : "THB";
+    setCurrencyState(defaultCurrency);
+    localStorage.setItem("currency", defaultCurrency);
+  }
+
+  // ✅ ผู้ใช้เปลี่ยนสกุลเงินเองได้อิสระ ไม่กระทบภาษา
+  function setCurrency(curr: Currency) {
     setCurrencyState(curr);
     localStorage.setItem("currency", curr);
-  };
+  }
 
-  const t = (key: string): string => {
-    // ✅ TypeScript รู้ type แล้ว
+  function t(key: string): string {
     return translations[language][key] || key;
-  };
+  }
 
   return (
-    <AppContext.Provider value={{ language, setLanguage, currency, setCurrency, t }}>
+    <AppContext.Provider value={{ language, setLanguage, currency, setCurrency, mounted, t }}>
       {children}
     </AppContext.Provider>
   );
