@@ -82,10 +82,7 @@ const translations: Record<Language, TranslationDict> = {
     "pricing.bundle": "แพ็กเกจ",
     "pricing.bundle.desc": "คุ้มค่าสุด",
     "pricing.features": "ฟีเจอร์ทั้งหมด",
-    "pricing.license": "License ตลอดชีพ",
-    "pricing.updates": "อัปเดตฟรี",
     "pricing.support": "การสนับสนุน",
-    "pricing.money_back": "คืนเงินภายใน 30 วัน",
     
     // Support Page
     "support.title": "ศูนย์ช่วยเหลือ",
@@ -193,10 +190,7 @@ const translations: Record<Language, TranslationDict> = {
     "pricing.bundle": "Bundle",
     "pricing.bundle.desc": "Best value",
     "pricing.features": "All Features Included",
-    "pricing.license": "Lifetime License",
-    "pricing.updates": "Free Updates",
     "pricing.support": "Priority Support",
-    "pricing.money_back": "30-Day Money Back",
     
     // Support Page
     "support.title": "Support Center",

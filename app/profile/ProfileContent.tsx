@@ -18,7 +18,6 @@ export default function ProfileContent({
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-4">{t("profile.account")}</h2>
       <ProfileForm
         userId={userId}
         currentEmail={currentEmail}

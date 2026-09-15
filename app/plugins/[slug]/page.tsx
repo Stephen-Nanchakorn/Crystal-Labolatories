@@ -238,14 +238,7 @@ export default function PluginDetailPage({ params }: { params: Promise<{ slug: s
               >
                 {isFree ? `⬇️ ${t("common.download_now")}` : `🛒 ${t("common.buy")}`}
               </Link>
-              
-              {!isFree && (
-                <div className="mt-4 text-sm text-gray-400 text-center">
-                  <p>✅ {t("pricing.license")}</p>
-                  <p>✅ {t("pricing.updates")}</p>
-                  <p>✅ {t("pricing.money_back")}</p>
-                </div>
-              )}
+            
             </div>
 
             {/* Compatibility */}

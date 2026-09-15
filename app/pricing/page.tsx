@@ -13,7 +13,7 @@ export default function PricingPage() {
     {
       slug: "drop-tune",
       name: "Drop-Tune",
-      description: language === "th" 
+      description: language === "th"
         ? "ปรับจูนเสียงฟรี สำหรับ Guitar, Bass, Keyboard"
         : "Free pitch-tuning for Guitar, Bass, Keyboard",
       thb: 0,
@@ -90,7 +90,7 @@ export default function PricingPage() {
                 <div className={`text-center p-4 rounded-xl mb-6 ${plugin.isFree ? "bg-green-900/20" : "bg-gray-800"}`}>
                   <h3 className="text-xl font-semibold mb-1">{plugin.name}</h3>
                   <p className="text-gray-400 text-sm mb-4">{plugin.description}</p>
-                  
+
                   {plugin.isFree ? (
                     <div className="text-3xl font-bold text-green-400">{t("common.free")}</div>
                   ) : (
@@ -118,25 +118,16 @@ export default function PricingPage() {
                         <span className="text-green-400">✓</span> {feature}
                       </li>
                     ))}
-                    <li className="text-sm text-gray-300 flex items-center gap-2">
-                      <span className="text-green-400">✓</span> {t("pricing.license")}
-                    </li>
-                    <li className="text-sm text-gray-300 flex items-center gap-2">
-                      <span className="text-green-400">✓</span> {t("pricing.updates")}
-                    </li>
-                    <li className="text-sm text-gray-300 flex items-center gap-2">
-                      <span className="text-green-400">✓</span> {t("pricing.money_back")}
-                    </li>
                   </ul>
+
                 </div>
 
                 <Link
                   href={plugin.isFree ? `/plugins/${plugin.slug}` : `/checkout/${plugin.slug}`}
-                  className={`block text-center font-bold py-3 rounded-lg transition-colors ${
-                    plugin.isFree
+                  className={`block text-center font-bold py-3 rounded-lg transition-colors ${plugin.isFree
                       ? "bg-green-500 hover:bg-green-600 text-black"
                       : "bg-cyan-400 hover:bg-cyan-500 text-black"
-                  }`}
+                    }`}
                 >
                   {plugin.isFree ? t("common.download_now") : t("common.buy")}
                 </Link>
