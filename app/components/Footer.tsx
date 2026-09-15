@@ -1,80 +1,43 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import { createClient } from "@/lib/supabase/client";
 import { useApp } from "@/app/context/AppContext";
 
 export default function Footer() {
   const { language } = useApp();
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+  const supabase = createClient();
+
+  // ✅ เช็คสถานะล็อกอินตอนโหลด component
+  useEffect(() => {
+    async function checkAuth() {
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsLoggedIn(!!user);
+    }
+    checkAuth();
+  }, [supabase.auth]);
 
   const currentYear = new Date().getFullYear();
 
-  // Social Media links
   const socialLinks = [
-    {
-      name: "Instagram",
-      icon: "/social/instagram.svg",
-      url: "https://instagram.com/crystallabofficial",
-      alt: "Instagram",
-    },
-    {
-      name: "Twitter",
-      icon: "/social/twitter.svg", 
-      url: "https://twitter.com/crystallab",
-      alt: "Twitter",
-    },
-    {
-      name: "YouTube",
-      icon: "/social/youtube.svg",
-      url: "https://youtube.com/c/@crystallabofficial",
-      alt: "YouTube",
-    },
-    {
-      name: "Facebook",
-      icon: "/social/facebook.svg",
-      url: "https://facebook.com/crystallabofficial",
-      alt: "Facebook",
-    },
-    {
-      name: "Discord",
-      icon: "/social/discord.svg",
-      url: "https://discord.gg/crystallab",
-      alt: "Discord",
-    },
-    {
-      name: "GitHub",
-      icon: "/social/github.svg",
-      url: "https://github.com/crystal-lab",
-      alt: "GitHub",
-    },
+    { name: "Instagram", url: "https://instagram.com/crystallabofficial", icon: "📷" },
+    { name: "Twitter", url: "https://twitter.com/crystallab", icon: "🐦" },
+    { name: "YouTube", url: "https://youtube.com/c/@crystallabofficial", icon: "▶️" },
+    { name: "Facebook", url: "https://facebook.com/crystallabofficial", icon: "👍" },
+    { name: "Discord", url: "https://discord.gg/crystallab", icon: "💬" },
+    { name: "GitHub", url: "https://github.com/crystal-lab", icon: "💻" },
   ];
 
   return (
     <footer className="bg-gray-900 border-t border-gray-800 text-white">
       <div className="max-w-7xl mx-auto px-4 py-12">
-        {/* Logo & Tagline */}
-        <div className="mb-10 text-center">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg flex items-center justify-center">
-              <span className="text-2xl font-bold">🎧</span>
-            </div>
-            <div className="text-left">
-              <h2 className="text-2xl font-bold">
-                <span className="text-white">Crystal</span>
-                <span className="text-cyan-400">Lab</span>
-              </h2>
-              <p className="text-gray-400 text-sm">
-                {language === "th" 
-                  ? "เสียงระดับสตูดิโอ สำหรับโปรดิวเซอร์รุ่นใหม่" 
-                  : "Studio-grade audio tools for next-generation producers"}
-              </p>
-            </div>
-          </div>
-        </div>
+        {/* ❌ ลบ Logo & Tagline block ออกทั้งหมดแล้ว (ข้อ 2) */}
 
         {/* Main Footer Content */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 mb-10">
-          {/* 1.1 Popular Plugins */}
+          {/* Popular Plugins */}
           <div>
             <h3 className="font-bold text-lg mb-4 text-cyan-300">
               {language === "th" ? "ปลั๊กอินยอดนิยม" : "Popular Plugins"}
@@ -98,7 +61,7 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* 1.2 Popular Pages */}
+          {/* Popular Pages */}
           <div>
             <h3 className="font-bold text-lg mb-4 text-cyan-300">
               {language === "th" ? "หน้าที่นิยม" : "Popular Pages"}
@@ -115,27 +78,27 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
+                {/* ✅ ข้อ 1: ลบ (รับส่วนลด) ออก */}
                 <Link href="/refer" className="text-gray-400 hover:text-cyan-400 transition-colors">
-                  {language === "th" ? "👥 ชวนเพื่อน (รับส่วนลด)" : "👥 Refer a Friend (Get Discount)"}
+                  {language === "th" ? "👥 ชวนเพื่อน" : "👥 Refer a Friend"}
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* 1.3 Useful Links */}
+          {/* Useful Links */}
           <div>
             <h3 className="font-bold text-lg mb-4 text-cyan-300">
               {language === "th" ? "ลิงก์สำคัญ" : "Useful Links"}
             </h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/profile" className="text-gray-400 hover:text-cyan-400 transition-colors">
+                {/* ✅ ข้อ 3: Smart link เช็คสถานะล็อกอิน ไม่มีบรรทัด "ยังไม่มีบัญชี" อีกแล้ว */}
+                <Link
+                  href={isLoggedIn ? "/profile" : "/login"}
+                  className="text-gray-400 hover:text-cyan-400 transition-colors"
+                >
                   {language === "th" ? "👤 บัญชีของฉัน" : "👤 My Account"}
-                </Link>
-              </li>
-              <li>
-                <Link href="/login" className="text-gray-400 hover:text-cyan-400 transition-colors text-sm">
-                  {language === "th" ? "   ↳ ยังไม่มีบัญชี? สมัครเลย" : "   ↳ No account? Sign up"}
                 </Link>
               </li>
               <li>
@@ -146,7 +109,7 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* 1.4 About Us */}
+          {/* About Us */}
           <div>
             <h3 className="font-bold text-lg mb-4 text-cyan-300">
               {language === "th" ? "เกี่ยวกับเรา" : "About Us"}
@@ -178,19 +141,20 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
+                {/* ✅ ข้อ 4: ลบคำอธิบายออก เหลือแค่ EULA */}
                 <Link href="/eula" className="text-gray-400 hover:text-cyan-400 transition-colors text-sm">
-                  📄 EULA (End User License Agreement)
+                  📄 EULA
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* 1.7 Social Media */}
+          {/* Social Media */}
           <div>
             <h3 className="font-bold text-lg mb-4 text-cyan-300">
               {language === "th" ? "ติดตามเรา" : "Follow Us"}
             </h3>
-            <div className="grid grid-cols-3 gap-3 mb-4">
+            <div className="grid grid-cols-3 gap-3">
               {socialLinks.map((social) => (
                 <a
                   key={social.name}
@@ -200,36 +164,23 @@ export default function Footer() {
                   className="bg-gray-800 hover:bg-gray-700 rounded-lg p-3 flex items-center justify-center transition-colors"
                   title={social.name}
                 >
-                  <span className="text-xl">
-                    {social.name === "Instagram" && "📷"}
-                    {social.name === "Twitter" && "🐦"}
-                    {social.name === "YouTube" && "▶️"}
-                    {social.name === "Facebook" && "👍"}
-                    {social.name === "Discord" && "💬"}
-                    {social.name === "GitHub" && "💻"}
-                  </span>
+                  <span className="text-xl">{social.icon}</span>
                 </a>
               ))}
             </div>
-            <p className="text-gray-400 text-sm">
-              {language === "th" 
-                ? "ติดตามข่าวสารและอัปเดตล่าสุด" 
-                : "Stay updated with news and releases"}
-            </p>
+            {/* ❌ ข้อ 5: ลบ "ติดตามข่าวสารและอัปเดตล่าสุด" ออกแล้ว */}
           </div>
         </div>
 
         {/* Divider */}
         <div className="border-t border-gray-800 my-8"></div>
 
-        {/* Copyright & Legal */}
+        {/* Copyright */}
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-          {/* 1.6 Copyright */}
           <div className="text-gray-500 text-sm text-center md:text-left">
             © {currentYear} Crystal Labolatories. {language === "th" ? "สงวนลิขสิทธิ์ทุกประการ" : "All rights reserved."}
           </div>
 
-          {/* Additional Legal Links */}
           <div className="flex flex-wrap justify-center gap-4 text-gray-500 text-sm">
             <Link href="/terms" className="hover:text-cyan-400 transition-colors">
               {language === "th" ? "ข้อกำหนด" : "Terms"}

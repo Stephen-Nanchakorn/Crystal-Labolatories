@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Header from "@/app/components/header";
-import SubscriptionHeader from "@/app/components/SubscriptionHeader";
 import Footer from "@/app/components/Footer";
 import { AppProvider } from "@/app/context/AppContext";
 import LiveChat from "@/app/components/LiveChat";
@@ -16,14 +15,13 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: { // ✅ เปลี่ยนจาก ReadOnly/Readonly เป็น type ง่ายๆ
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
     <html lang="en">
       <body className={inter.className}>
         <AppProvider>
-          <SubscriptionHeader />
           <Header />
           {children}
           <Footer />

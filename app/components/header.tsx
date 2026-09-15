@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useApp } from "@/app/context/AppContext";
-import ProfileMenu from "@/app/components/ProfileMenu"; // ✅ ใช้ ProfileMenu
+import ProfileMenu from "@/app/components/ProfileMenu";
 
 export default function Header() {
   const pathname = usePathname();
@@ -26,6 +26,10 @@ export default function Header() {
             </Link>
             <Link href="/pricing" className={`text-sm ${pathname === "/pricing" ? "text-white" : "text-gray-300 hover:text-white"}`}>
               {t("header.pricing")}
+            </Link>
+            {/* ✅ เพิ่มเมนู Subscription ตรงนี้ */}
+            <Link href="/subscription" className={`text-sm ${pathname === "/subscription" ? "text-white" : "text-gray-300 hover:text-white"}`}>
+              {t("header.subscription")}
             </Link>
             <Link href="/support" className={`text-sm ${pathname === "/support" ? "text-white" : "text-gray-300 hover:text-white"}`}>
               {t("header.support")}

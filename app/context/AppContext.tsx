@@ -34,6 +34,7 @@ const translations: Record<Language, TranslationDict> = {
     "header.plugins": "ปลั๊กอิน",
     "header.pricing": "ราคา",
     "header.support": "ช่วยเหลือ",
+     "header.subscription": "สมัครสมาชิก", // ✅ เพิ่มบรรทัดนี้
     "header.profile": "โปรไฟล์",
     
     // Profile Menu
@@ -142,6 +143,7 @@ const translations: Record<Language, TranslationDict> = {
     "header.plugins": "Plugins",
     "header.pricing": "Pricing",
     "header.support": "Support",
+    "header.subscription": "Subscription", // ✅ เพิ่มบรรทัดนี้
     "header.profile": "Profile",
     
     // Profile Menu
