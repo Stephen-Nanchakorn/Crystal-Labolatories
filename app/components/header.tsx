@@ -26,6 +26,7 @@ export default function Header() {
             </Link>
             <Link href="/pricing" className={`text-sm ${pathname === "/pricing" ? "text-white" : "text-gray-300 hover:text-white"}`}>
               {t("header.pricing")}
+              
             </Link>
             {/* ✅ เพิ่มเมนู Subscription ตรงนี้ */}
             <Link href="/subscription" className={`text-sm ${pathname === "/subscription" ? "text-white" : "text-gray-300 hover:text-white"}`}>

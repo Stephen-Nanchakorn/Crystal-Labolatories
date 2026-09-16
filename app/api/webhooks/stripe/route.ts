@@ -31,13 +31,13 @@ export async function POST(request: NextRequest) {
         await handleSuccessfulPayment(session, supabase);
         break;
       }
-      
+
       case "invoice.payment_succeeded": {
         const invoice = event.data.object as Stripe.Invoice;
         await handleInvoicePayment(invoice, supabase);
         break;
       }
-      
+
       default:
         console.log(`Unhandled event type: ${event.type}`);
     }
@@ -123,6 +123,62 @@ async function handleSuccessfulPayment(
         })
         .eq("id", referrerId);
     }
+    // ในฟังก์ชัน handleSuccessfulPayment - เพิ่มส่วนนี้:
+
+    // ถ้ามี referral code
+    if (referralCode && referralLink) {
+      const referrerId = referralLink.user_id;
+      const commission = amount * 0.1; // 10%
+
+      // 1. เพิ่ม credit ให้ referrer
+      const { error: creditError } = await supabase
+        .from("credit_transactions")
+        .insert({
+          user_id: referrerId,
+          transaction_type: "earn",
+          amount: commission,
+          description: `Referral commission from ${session.metadata?.userId?.substring(0, 8) || 'user'}`,
+          reference_type: "referral",
+          reference_id: session.id,
+          status: "completed"
+        });
+
+      if (creditError) {
+        console.error("Error adding credit transaction:", creditError);
+      }
+
+      // 2. อัพเดต balance ใน users table
+      const { error: updateError } = await supabase
+        .from("users")
+        .update({
+          balance: (referralLink.balance || 0) + commission,
+          credit_total: (referralLink.credit_total || 0) + commission
+        })
+        .eq("id", referrerId);
+
+      if (updateError) {
+        console.error("Error updating user balance:", updateError);
+      }
+
+      // 3. บันทึก referral conversion (ถ้ายังไม่มี)
+      const { error: conversionError } = await supabase
+        .from("referral_conversions")
+        .insert({
+          referrer_id: referrerId,
+          referred_user_id: userId,
+          referral_code: referralCode,
+          purchase_amount: amount,
+          commission_earned: commission,
+          status: "approved",
+          stripe_payment_intent_id: paymentIntentId
+        });
+
+      if (conversionError) {
+        console.error("Error recording referral conversion:", conversionError);
+      }
+
+      console.log(`Added ${commission} credits to referrer ${referrerId}`);
+    }
   }
 
   // 6. สร้าง invoice record
@@ -133,7 +189,7 @@ async function handleSuccessfulPayment(
       stripe_payment_intent_id: paymentIntentId,
       amount: amount,
       currency: session.currency || 'usd',
-      items: session.metadata?.items 
+      items: session.metadata?.items
         ? JSON.parse(session.metadata.items)
         : [{ name: "Unknown Product", price: amount }],
       status: "paid",
@@ -146,9 +202,9 @@ async function handleInvoicePayment(invoice: Stripe.Invoice, supabase: any) {
   // ✅ แก้ตรงนี้: ใน Invoice ของ Stripe version 2026, payment_intent อยู่ใน charge
   // invoice.charge คือ PaymentIntent object
   const charge = invoice.charge as Stripe.Charge | string | null;
-  
+
   let paymentIntentId: string | null = null;
-  
+
   if (typeof charge === 'string') {
     paymentIntentId = charge;
   } else if (charge && typeof charge === 'object' && 'payment_intent' in charge) {
@@ -174,7 +230,7 @@ async function handleInvoicePayment(invoice: Stripe.Invoice, supabase: any) {
       stripe_payment_intent_id: paymentIntentId,
       amount: amount,
       currency: invoice.currency,
-      items: [{ 
+      items: [{
         name: "Crystal Creator Bundle Subscription",
         price: amount,
         period: invoice.metadata?.period || "monthly"
@@ -187,7 +243,7 @@ async function handleInvoicePayment(invoice: Stripe.Invoice, supabase: any) {
 
 // ✅ ตรวจสอบว่า webhook ทำงานได้
 export async function GET() {
-  return NextResponse.json({ 
+  return NextResponse.json({
     status: "Stripe webhook endpoint is running",
     timestamp: new Date().toISOString()
   });
