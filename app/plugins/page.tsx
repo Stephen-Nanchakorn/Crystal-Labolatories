@@ -1,133 +1,243 @@
 "use client";
 
-import Link from "next/link";
+import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { useApp } from "@/app/context/AppContext";
-import CurrencyToggle from "@/app/components/CurrencyToggle";
+import PluginCard from "@/app/components/plugins/PluginCard";
 
-const pluginsData = {
-  th: [
-    {
-      slug: "drop-tune",
-      name: "Drop-Tune",
-      description: "ปลั๊กอินปรับจูนเสียงฟรี สำหรับ Guitar, Bass และ Keyboard พร้อมกลิ่นอายเสียงแบบ Analog Gear",
-      icon: "🎸",
-      thb: 0,
-      usd: 0,
-      isFree: true,
-    },
-    {
-      slug: "stem-splitter",
-      name: "Stem Splitter",
-      description: "แยกเสียงดนตรีด้วย AI ความละเอียดสูง แยกได้ถึง 10 ส่วน ตั้งแต่ Vocal ไปจนถึง Strings",
-      icon: "🧬",
-      thb: 3249,
-      usd: 99,
-      isFree: false,
-    },
-    {
-      slug: "analog-eq",
-      name: "Analog EQ",
-      description: "Graphic EQ สไตล์ Knob 7-Band พร้อม Gate และ Compressor ในตัว ออกแบบมาเพื่อย่านเสียง Guitar & Bass โดยเฉพาะ",
-      icon: "🎛️",
-      thb: 1949,
-      usd: 59,
-      isFree: false,
-    },
-  ],
-  en: [
-    {
-      slug: "drop-tune",
-      name: "Drop-Tune",
-      description: "Free pitch-tuning plugin for Guitar, Bass, and Keyboard with warm analog gear character",
-      icon: "🎸",
-      thb: 0,
-      usd: 0,
-      isFree: true,
-    },
-    {
-      slug: "stem-splitter",
-      name: "Stem Splitter",
-      description: "AI-powered high-precision stem separation, splitting up to 10 tracks from Vocals to Strings",
-      icon: "🧬",
-      thb: 3249,
-      usd: 99,
-      isFree: false,
-    },
-    {
-      slug: "analog-eq",
-      name: "Analog EQ",
-      description: "Classic 7-band knob-style Graphic EQ with built-in Gate and Compressor, designed for Guitar & Bass",
-      icon: "🎛️",
-      thb: 1949,
-      usd: 59,
-      isFree: false,
-    },
-  ],
-};
+// ==================== TYPES ====================
+interface Plugin {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  price: number;
+  currency: string;
+  category: string | null;
+  image_url: string | null;
+  discount_percent: number;
+  is_free: boolean;
+  is_featured: boolean;
+  tags: string[];
+  features: any[];
+  created_at: string;
+}
 
+// ==================== MAIN COMPONENT ====================
 export default function PluginsPage() {
-  const { language, currency, setCurrency, mounted } = useApp();
-  const plugins = pluginsData[language];
+  const { language } = useApp();
+  const supabase = createClient();
+  
+  // ==================== STATES ====================
+  const [plugins, setPlugins] = useState<Plugin[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [searchTerm, setSearchTerm] = useState<string>("");
 
+  // ==================== EFFECTS ====================
+  useEffect(() => {
+    async function loadPlugins() {
+      setLoading(true);
+      
+      try {
+        // ดึงข้อมูล plugins จาก Supabase
+        let query = supabase
+          .from("plugins")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        // Filter by category ถ้าเลือก
+        if (selectedCategory !== "all") {
+          query = query.eq("category", selectedCategory);
+        }
+
+        // Filter by search term ถ้ามี
+        if (searchTerm) {
+          query = query.or(`name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+        }
+
+        const { data, error } = await query;
+
+        if (error) {
+          console.error("Error loading plugins:", error);
+        } else {
+          setPlugins(data || []);
+          
+          // ดึง categories ทั้งหมด
+          const { data: categoriesData } = await supabase
+            .from("plugins")
+            .select("category")
+            .not("category", "is", null);
+          
+          const uniqueCategories = Array.from(
+            new Set(categoriesData?.map((c: any) => c.category).filter(Boolean))
+          ) as string[];
+          setCategories(uniqueCategories);
+        }
+      } catch (error) {
+        console.error("Error:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadPlugins();
+  }, [selectedCategory, searchTerm, supabase]);
+
+  // ==================== FUNCTIONS ====================
+  function clearFilters() {
+    setSearchTerm("");
+    setSelectedCategory("all");
+  }
+
+  // ==================== RENDER ====================
   return (
     <main className="min-h-screen bg-black text-white p-8">
       <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-10">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            <span className="text-white">CRYSTAL</span> <span className="text-cyan-400">PLUGINS</span>
+        {/* HEADER */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold mb-2">
+            {language === "th" ? "ปลั๊กอินทั้งหมด" : "All Plugins"}
           </h1>
-          <p className="text-gray-400 max-w-2xl mx-auto">
+          <p className="text-gray-400">
             {language === "th"
-              ? "ปลั๊กอินเสียงคุณภาพระดับสตูดิโอ สำหรับโปรดิวเซอร์สมัยใหม่"
-              : "Studio-quality audio plugins for modern producers"}
+              ? "ค้นพบปลั๊กอินเสียงคุณภาพจาก Crystal Lab"
+              : "Discover quality audio plugins from Crystal Lab"}
           </p>
         </div>
 
-        {/* ✅ Currency Toggle แสดงทุกภาษา เปลี่ยนได้อิสระ */}
-        <div className="flex justify-center mb-12">
-          <CurrencyToggle currency={currency} setCurrency={setCurrency} />
-        </div>
+        {/* SEARCH & FILTERS */}
+        <div className="mb-8 space-y-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            {/* SEARCH BAR */}
+            <div className="flex-1">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder={language === "th" ? "ค้นหาปลั๊กอิน..." : "Search plugins..."}
+                  className="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 pl-12 text-white focus:border-cyan-500 focus:outline-none"
+                />
+                <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+                  🔍
+                </div>
+              </div>
+            </div>
 
-        <div className="grid md:grid-cols-3 gap-6">
-          {plugins.map((plugin) => {
-            const price = currency === "THB" ? plugin.thb : plugin.usd;
-            const symbol = currency === "THB" ? "฿" : "$";
-
-            return (
-              <Link
-                key={plugin.slug}
-                href={`/plugins/${plugin.slug}`}
-                className="group block bg-gray-900 border border-gray-800 rounded-2xl p-6 hover:border-cyan-500 transition-all hover:scale-[1.02]"
+            {/* CATEGORY FILTER */}
+            <div className="w-full md:w-64">
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-cyan-500 focus:outline-none"
               >
-                <div className="text-5xl mb-4">{plugin.icon}</div>
+                <option value="all">
+                  {language === "th" ? "ทุกหมวดหมู่" : "All Categories"}
+                </option>
+                {categories.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
 
-                <div className="mb-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-xl font-semibold">{plugin.name}</h3>
-                    <div className={`font-bold ${plugin.isFree ? "text-green-400" : "text-cyan-400"}`}>
-                      {plugin.isFree ? (language === "th" ? "ฟรี" : "FREE") : mounted ? `${symbol}${price.toLocaleString()}` : "..."}
-                    </div>
-                  </div>
-                  <p className="text-gray-400 text-sm leading-relaxed">{plugin.description}</p>
-                </div>
-
-                <div className="text-sm text-gray-500 mb-4 space-y-1">
-                  <div>• {language === "th" ? "ใช้งานกับ Pro Tools, Logic, Ableton" : "Works with Pro Tools, Logic, Ableton"}</div>
-                  <div>• MacOS Ventura {language === "th" ? "ขึ้นไป" : "or later"}</div>
-                  <div>• AU, VST3, AAX formats</div>
-                </div>
-
-                <div className="text-center">
-                  <div className="inline-block bg-cyan-400 text-black font-bold px-4 py-2 rounded-lg group-hover:bg-cyan-500 transition-colors">
-                    {plugin.isFree
-                      ? language === "th" ? "📥 ดาวน์โหลดฟรี" : "📥 Download Free"
-                      : language === "th" ? "🛒 ซื้อทันที" : "🛒 Buy Now"}
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
+          {/* QUICK FILTERS */}
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setSelectedCategory("all")}
+              className={`px-4 py-2 rounded-lg transition-colors ${selectedCategory === "all" ? "bg-cyan-400 text-black" : "bg-gray-900 text-gray-300 hover:bg-gray-800"}`}
+            >
+              {language === "th" ? "ทั้งหมด" : "All"}
+            </button>
+            <button
+              onClick={() => {
+                const featuredPlugins = plugins.filter(p => p.is_featured);
+                setPlugins(featuredPlugins);
+              }}
+              className="px-4 py-2 rounded-lg bg-gray-900 text-gray-300 hover:bg-gray-800 transition-colors"
+            >
+              {language === "th" ? "แนะนำ" : "Featured"}
+            </button>
+            <button
+              onClick={() => {
+                const freePlugins = plugins.filter(p => p.is_free);
+                setPlugins(freePlugins);
+              }}
+              className="px-4 py-2 rounded-lg bg-gray-900 text-gray-300 hover:bg-gray-800 transition-colors"
+            >
+              {language === "th" ? "ฟรี" : "Free"}
+            </button>
+            <button
+              onClick={() => {
+                const discountedPlugins = plugins.filter(p => p.discount_percent > 0);
+                setPlugins(discountedPlugins);
+              }}
+              className="px-4 py-2 rounded-lg bg-gray-900 text-gray-300 hover:bg-gray-800 transition-colors"
+            >
+              {language === "th" ? "ลดราคา" : "On Sale"}
+            </button>
+          </div>
         </div>
+
+        {/* LOADING STATE */}
+        {loading ? (
+          <div className="text-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400 mx-auto"></div>
+            <p className="mt-4 text-gray-400">
+              {language === "th" ? "กำลังโหลดปลั๊กอิน..." : "Loading plugins..."}
+            </p>
+          </div>
+        ) : plugins.length === 0 ? (
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-12 text-center">
+            <div className="text-6xl mb-6">🎧</div>
+            <h2 className="text-2xl font-bold mb-4">
+              {language === "th" ? "ไม่พบปลั๊กอิน" : "No plugins found"}
+            </h2>
+            <p className="text-gray-400 mb-8">
+              {language === "th"
+                ? "ลองเปลี่ยนคำค้นหาหรือหมวดหมู่ดูสิ"
+                : "Try changing your search term or category"}
+            </p>
+            <button
+              onClick={clearFilters}
+              className="bg-cyan-400 hover:bg-cyan-500 text-black font-bold px-8 py-3 rounded-lg transition-colors"
+            >
+              {language === "th" ? "ล้างตัวกรอง" : "Clear Filters"}
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* STATS */}
+            <div className="mb-6 text-gray-400">
+              {language === "th"
+                ? `พบ ${plugins.length} ปลั๊กอิน`
+                : `Found ${plugins.length} plugins`}
+            </div>
+
+            {/* PLUGIN GRID */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {plugins.map((plugin) => (
+                <PluginCard
+                  key={plugin.slug}
+                  slug={plugin.slug}
+                  name={plugin.name}
+                  description={plugin.description}
+                  price={plugin.price}
+                  currency={plugin.currency}
+                  imageUrl={plugin.image_url || undefined}
+                  category={plugin.category || undefined}
+                  discountPercent={plugin.discount_percent}
+                  isFree={plugin.is_free}
+                  isFeatured={plugin.is_featured}
+                />
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </main>
   );
