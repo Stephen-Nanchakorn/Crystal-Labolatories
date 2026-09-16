@@ -1,20 +1,38 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function middleware(req: NextRequest) {
-  console.log("Middleware running for:", req.nextUrl.pathname);
+export async function middleware(request: NextRequest) {
+  const response = NextResponse.next();
   
-  const country = req.headers.get("x-vercel-ip-country") || "TH";
-  const res = NextResponse.next();
+  // เช็คว่ามี referral code ใน URL หรือไม่
+  const ref = request.nextUrl.searchParams.get("ref");
   
-  // ตั้งคุกกี้เฉพาะถ้า path ไม่ใช่ auth callback (เผื่อมีปัญหา)
-  if (!req.nextUrl.pathname.startsWith("/auth/callback")) {
-    res.cookies.set("detected-currency", country === "TH" ? "THB" : "USD");
+  if (ref) {
+    // บันทึก referral code ใน cookie (30 วัน)
+    response.cookies.set("referral_code", ref, {
+      maxAge: 60 * 60 * 24 * 30, // 30 วัน
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+    });
+    
+    // บันทึกใน session storage สำหรับ client-side access
+    response.headers.set("X-Referral-Code", ref);
   }
   
-  return res;
+  return response;
 }
 
 export const config = {
-  matcher: "/:path*",
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    "/((?!api|_next/static|_next/image|favicon.ico).*)",
+  ],
 };
