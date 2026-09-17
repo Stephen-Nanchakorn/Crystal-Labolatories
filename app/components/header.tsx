@@ -1,42 +1,31 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { useApp } from "@/app/context/AppContext";
+import LanguageCurrencySwitcher from "@/app/components/LanguageCurrencySwitcher";
 import ProfileMenu from "@/app/components/ProfileMenu";
 
 export default function Header() {
-  const pathname = usePathname();
-  const { t } = useApp();
-
   return (
-    <header className="bg-gray-900 border-b border-gray-800 px-6 py-4">
-      <div className="max-w-7xl mx-auto flex justify-between items-center">
-        <Link href="/" className="text-xl font-bold hover:opacity-90">
-          <span className="text-white">Crystal</span> <span className="text-cyan-400">Lab</span>
+    <header className="sticky top-0 z-40 bg-black/80 backdrop-blur-md border-b border-gray-900">
+      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+        {/* LOGO */}
+        <Link href="/" className="text-xl font-bold text-white">
+          Crystal Lab
         </Link>
 
-        <div className="flex items-center gap-6">
-          <nav className="hidden md:flex items-center gap-8">
-            <Link href="/" className={`text-sm ${pathname === "/" ? "text-white" : "text-gray-300 hover:text-white"}`}>
-              {t("header.home")}
-            </Link>
-            <Link href="/plugins" className={`text-sm ${pathname.startsWith("/plugins") ? "text-white" : "text-gray-300 hover:text-white"}`}>
-              {t("header.plugins")}
-            </Link>
-            <Link href="/pricing" className={`text-sm ${pathname === "/pricing" ? "text-white" : "text-gray-300 hover:text-white"}`}>
-              {t("header.pricing")}
-              
-            </Link>
-            {/* ✅ เพิ่มเมนู Subscription ตรงนี้ */}
-            <Link href="/subscription" className={`text-sm ${pathname === "/subscription" ? "text-white" : "text-gray-300 hover:text-white"}`}>
-              {t("header.subscription")}
-            </Link>
-            <Link href="/support" className={`text-sm ${pathname === "/support" ? "text-white" : "text-gray-300 hover:text-white"}`}>
-              {t("header.support")}
-            </Link>
-          </nav>
+        {/* NAV LINKS */}
+        <nav className="hidden md:flex items-center gap-6">
+          <Link href="/plugins" className="text-gray-300 hover:text-white transition-colors">
+            Plugins
+          </Link>
+          <Link href="/refer" className="text-gray-300 hover:text-white transition-colors">
+            Refer & Earn
+          </Link>
+        </nav>
 
+        {/* RIGHT SIDE: Language/Currency + Profile */}
+        <div className="flex items-center gap-3">
+          <LanguageCurrencySwitcher />
           <ProfileMenu />
         </div>
       </div>

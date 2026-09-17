@@ -1,4 +1,3 @@
-// /app/components/wishlist/HeartButton.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -15,6 +14,28 @@ interface HeartButtonProps {
   language?: string;
 }
 
+// ==================== TOAST HELPER ====================
+function showToast(message: string, icon: string) {
+  const existing = document.getElementById("wishlist-toast");
+  existing?.remove();
+
+  const toast = document.createElement("div");
+  toast.id = "wishlist-toast";
+  toast.className =
+    "fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900/95 backdrop-blur border border-gray-700 text-white px-5 py-3 rounded-full shadow-xl z-[100] flex items-center gap-2 text-sm transition-all duration-300 opacity-0 translate-y-3";
+  toast.innerHTML = `<span>${icon}</span><span>${message}</span>`;
+  document.body.appendChild(toast);
+
+  requestAnimationFrame(() => {
+    toast.classList.remove("opacity-0", "translate-y-3");
+  });
+
+  setTimeout(() => {
+    toast.classList.add("opacity-0", "translate-y-3");
+    setTimeout(() => toast.remove(), 300);
+  }, 2500);
+}
+
 export default function HeartButton({
   pluginSlug,
   pluginName,
@@ -27,14 +48,13 @@ export default function HeartButton({
   const supabase = createClient();
   const [isInWishlist, setIsInWishlist] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [animating, setAnimating] = useState(false);
+  const [pulse, setPulse] = useState(false);
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
     async function loadData() {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
-      
       if (user) {
         const result = await checkWishlistStatus(pluginSlug);
         setIsInWishlist(result.isInWishlist);
@@ -44,15 +64,18 @@ export default function HeartButton({
     loadData();
   }, [pluginSlug, supabase.auth]);
 
-  const handleClick = async () => {
+  async function handleClick(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+
     if (!user) {
-      // ถ้ายังไม่ล็อกอิน ให้ไปหน้า login
       window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
       return;
     }
 
-    setAnimating(true);
-    
+    setPulse(true);
+    setTimeout(() => setPulse(false), 400);
+
     const result = await toggleWishlist(pluginSlug, {
       name: pluginName,
       price: pluginPrice,
@@ -61,94 +84,69 @@ export default function HeartButton({
 
     if (result.success) {
       setIsInWishlist(result.action === "added");
-      
-      // Show success message
-      if (typeof window !== 'undefined') {
-        const message = language === "th" 
-          ? (result.action === "added" 
-              ? `เพิ่ม "${pluginName}" ลงรายการโปรดแล้ว!` 
-              : `นำ "${pluginName}" ออกจากรายการโปรดแล้ว`)
-          : (result.action === "added" 
-              ? `Added "${pluginName}" to wishlist!` 
-              : `Removed "${pluginName}" from wishlist`);
-        
-        // สร้าง toast notification
-        const toast = document.createElement('div');
-        toast.className = 'fixed top-4 right-4 bg-gray-900 border border-gray-800 text-white px-4 py-3 rounded-lg shadow-lg z-50 animate-slide-in';
-        toast.innerHTML = `
-          <div class="flex items-center gap-3">
-            <span class="text-xl">${result.action === "added" ? "❤️" : "🤍"}</span>
-            <span>${message}</span>
-          </div>
-        `;
-        document.body.appendChild(toast);
-        
-        setTimeout(() => {
-          toast.classList.add('animate-slide-out');
-          setTimeout(() => toast.remove(), 300);
-        }, 3000);
-      }
-    }
 
-    setTimeout(() => setAnimating(false), 500);
-  };
+      const message =
+        result.action === "added"
+          ? language === "th"
+            ? `เพิ่ม "${pluginName}" ลงรายการโปรดแล้ว`
+            : `Added "${pluginName}" to wishlist`
+          : language === "th"
+          ? `นำ "${pluginName}" ออกจากรายการโปรดแล้ว`
+          : `Removed "${pluginName}" from wishlist`;
+
+      showToast(message, result.action === "added" ? "❤️" : "🤍");
+    }
+  }
 
   const sizeClasses = {
-    sm: "w-8 h-8 text-lg",
-    md: "w-10 h-10 text-xl",
-    lg: "w-12 h-12 text-2xl"
+    sm: "w-9 h-9 text-base",
+    md: "w-11 h-11 text-lg",
+    lg: "w-14 h-14 text-2xl"
   };
 
   if (loading) {
     return (
-      <button
-        className={`${sizeClasses[size]} bg-gray-800 rounded-full flex items-center justify-center opacity-50`}
-        disabled
-      >
-        <span className="animate-pulse">❤️</span>
-      </button>
+      <div className={`${sizeClasses[size]} rounded-full bg-black/20 backdrop-blur-sm flex items-center justify-center opacity-40`}>
+        <span className="text-sm">♡</span>
+      </div>
     );
   }
 
   return (
     <button
       onClick={handleClick}
-      disabled={animating}
       className={`
-        ${sizeClasses[size]} 
-        ${isInWishlist 
-          ? 'bg-pink-500/20 text-pink-400 border-pink-500/30' 
-          : 'bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700 hover:text-gray-300'
+        ${sizeClasses[size]}
+        relative rounded-full backdrop-blur-md flex items-center justify-center
+        transition-all duration-300 ease-out
+        ${isInWishlist
+          ? "bg-black/30 text-red-400/90"
+          : "bg-black/20 text-white/50 hover:text-white/80 hover:bg-black/30"
         }
-        border rounded-full flex items-center justify-center transition-all duration-300
-        ${animating ? 'scale-110' : 'hover:scale-105'}
-        ${showText ? 'px-4 py-2 w-auto gap-2' : ''}
+        ${pulse ? "scale-125" : "scale-100 hover:scale-110"}
+        ${showText ? "px-4 py-2 w-auto gap-2" : ""}
       `}
-      title={isInWishlist 
-        ? (language === "th" ? "นำออกจากรายการโปรด" : "Remove from wishlist") 
-        : (language === "th" ? "เพิ่มลงรายการโปรด" : "Add to wishlist")
+      title={
+        isInWishlist
+          ? (language === "th" ? "นำออกจากรายการโปรด" : "Remove from wishlist")
+          : (language === "th" ? "เพิ่มลงรายการโปรด" : "Add to wishlist")
       }
     >
-      {animating ? (
-        <span className="animate-ping">❤️</span>
-      ) : isInWishlist ? (
-        <>
-          <span>❤️</span>
-          {showText && (
-            <span className="text-sm font-medium">
-              {language === "th" ? "ในรายการโปรด" : "In Wishlist"}
-            </span>
-          )}
-        </>
-      ) : (
-        <>
-          <span>🤍</span>
-          {showText && (
-            <span className="text-sm font-medium">
-              {language === "th" ? "เพิ่มลงรายการโปรด" : "Add to Wishlist"}
-            </span>
-          )}
-        </>
+      {/* Ripple/pulse effect ตอนกด */}
+      {pulse && (
+        <span className="absolute inset-0 rounded-full bg-red-400/30 animate-ping"></span>
+      )}
+      
+      <span className={`relative transition-transform ${pulse ? "scale-90" : ""}`}>
+        {isInWishlist ? "♥" : "♡"}
+      </span>
+      
+      {showText && (
+        <span className="relative text-sm font-medium">
+          {isInWishlist
+            ? (language === "th" ? "ในรายการโปรด" : "In Wishlist")
+            : (language === "th" ? "เพิ่มลงรายการโปรด" : "Add to Wishlist")}
+        </span>
       )}
     </button>
   );

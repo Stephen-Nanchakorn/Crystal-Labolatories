@@ -5,6 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useApp } from "@/app/context/AppContext";
 import { getUserBalance } from "@/app/actions/credit";
+import ProfileAvatar from "@/app/components/ProfileAvatar";
 
 export default function ProfileMenu() {
   const { language } = useApp();
@@ -12,6 +13,7 @@ export default function ProfileMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [balance, setBalance] = useState<number>(0);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null); // ✅ กำหนด state สำหรับ avatarUrl
 
   useEffect(() => {
     async function loadUserData() {
@@ -19,10 +21,19 @@ export default function ProfileMenu() {
       if (user) {
         setUser(user);
         
-        // โหลด balance
-        const result = await getUserBalance();
-        if (result.success && result.data) {
-          setBalance(result.data.balance);
+        // โหลดข้อมูล user จากตาราง users
+        const { data: userData } = await supabase
+          .from("users")
+          .select("balance, avatar_url, preferred_language, preferred_currency")
+          .eq("id", user.id)
+          .single();
+        
+        if (userData) {
+          setBalance(userData.balance || 0);
+          setAvatarUrl(userData.avatar_url); // ✅ ตั้งค่า avatarUrl จาก database
+        } else {
+          // ถ้ายังไม่มีข้อมูลใน users table
+          setBalance(0);
         }
       }
     }
@@ -51,28 +62,41 @@ export default function ProfileMenu() {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 text-white hover:text-cyan-400 transition-colors"
       >
-        <div className="w-8 h-8 bg-cyan-400 rounded-full flex items-center justify-center">
-          <span className="font-bold text-black">
-            {user.email?.charAt(0).toUpperCase()}
-          </span>
-        </div>
+        <ProfileAvatar
+          userId={user.id}
+          avatarUrl={avatarUrl} // ✅ ใช้ avatarUrl ที่มาจาก state
+          email={user.email || ""}
+          size="sm"
+        />
         <span className="hidden md:inline">{user.email?.split('@')[0]}</span>
-        <span className="text-gray-400">▼</span>
+        <span className="text-gray-400 text-sm">▼</span>
       </button>
 
       {isOpen && (
         <div className="absolute right-0 top-full mt-2 w-64 bg-gray-900 border border-gray-800 rounded-xl shadow-lg z-50">
           {/* User Info Section */}
           <div className="p-4 border-b border-gray-800">
-            <div className="font-semibold text-white truncate">
-              {user.email}
-            </div>
-            <div className="text-sm text-gray-400 mt-1">
-              {language === "th" ? "สมาชิก Crystal Lab" : "Crystal Lab Member"}
+            <div className="flex items-center gap-3 mb-3">
+              <ProfileAvatar
+                userId={user.id}
+                avatarUrl={avatarUrl}
+                email={user.email || ""}
+                size="md"
+                editable={true}
+                onUploadSuccess={(newUrl) => setAvatarUrl(newUrl)}
+              />
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold text-white truncate">
+                  {user.email}
+                </div>
+                <div className="text-sm text-gray-400">
+                  {language === "th" ? "สมาชิก Crystal Lab" : "Crystal Lab Member"}
+                </div>
+              </div>
             </div>
             
-            {/* ✅ Balance Display */}
-            <div className="mt-3 p-3 bg-gray-800 rounded-lg">
+            {/* Balance Display */}
+            <div className="p-3 bg-gray-800 rounded-lg">
               <div className="flex justify-between items-center">
                 <span className="text-gray-400 text-sm">
                   {language === "th" ? "เครดิต" : "Credits"}
@@ -140,8 +164,17 @@ export default function ProfileMenu() {
           {/* Divider */}
           <div className="border-t border-gray-800"></div>
 
-          {/* Sign Out */}
+          {/* Settings & Logout */}
           <div className="p-2">
+            <Link
+              href="/profile/settings"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center gap-3 w-full px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors text-gray-300"
+            >
+              <span>⚙️</span>
+              <span>{language === "th" ? "ตั้งค่า" : "Settings"}</span>
+            </Link>
+            
             <button
               onClick={handleSignOut}
               className="flex items-center gap-3 w-full px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors text-red-400"

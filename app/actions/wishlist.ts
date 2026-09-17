@@ -84,6 +84,7 @@ export async function toggleWishlist(
 }
 
 // ==================== 2. ดึง Wishlist ทั้งหมด ====================
+// ==================== ดึง Wishlist ทั้งหมด (แก้ Bug: ดึง plugin data แยก ไม่พึ่ง auto-join) ====================
 export async function getWishlist() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -93,56 +94,52 @@ export async function getWishlist() {
   }
 
   try {
-    // ดึง wishlist items
-    const { data: wishlistItems } = await supabase
+    // 1. ดึง wishlist items แบบไม่ join (กันพังถ้า FK ยังไม่มี)
+    const { data: wishlistItems, error: wishlistError } = await supabase
       .from("wishlist")
-      .select(`
-        id,
-        plugin_id,
-        plugin_data,
-        notes,
-        created_at,
-        plugins:plugin_id (
-          slug,
-          name,
-          description,
-          price,
-          currency,
-          image_url,
-          discount_percent,
-          is_free
-        )
-      `)
+      .select("id, plugin_id, plugin_data, notes, created_at")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
-    // ดึง plugin details สำหรับ items ที่ไม่มี plugin_data
-    const itemsWithDetails = await Promise.all(
-      (wishlistItems || []).map(async (item: any) => {
-        if (item.plugin_data) {
-          return {
-            ...item,
-            plugin: item.plugin_data
-          };
-        }
+    if (wishlistError) throw wishlistError;
 
-        // ถ้าไม่มี plugin_data ให้ดึงจาก plugins table
-        if (item.plugin_id && item.plugins) {
-          return {
-            ...item,
-            plugin: item.plugins
-          };
-        }
+    const items = wishlistItems || [];
 
-        return item;
-      })
-    );
+    // 2. ดึงรายละเอียดปลั๊กอินทั้งหมดที่เกี่ยวข้อง แยกต่างหาก (join ด้วยมือ)
+    const pluginSlugs = items.map((item) => item.plugin_id).filter(Boolean);
+    
+    let pluginsMap: Record<string, any> = {};
+    
+    if (pluginSlugs.length > 0) {
+      const { data: pluginsData } = await supabase
+        .from("plugins")
+        .select("slug, name, description, price, currency, image_url, discount_percent, is_free")
+        .in("slug", pluginSlugs);
 
-    // ดึง wishlist count
-    const { data: countData } = await supabase
-      .rpc('get_wishlist_count', { p_user_id: user.id });
+      pluginsMap = (pluginsData || []).reduce((acc: Record<string, any>, p: any) => {
+        acc[p.slug] = p;
+        return acc;
+      }, {});
+    }
 
-    // ดึง notifications ที่ยังไม่อ่าน
+    // 3. รวมข้อมูล: ใช้ plugins table ก่อน ถ้าไม่มี (ปลั๊กอินถูกลบไปแล้ว) ให้ fallback ไปที่ plugin_data snapshot
+    const itemsWithDetails = items.map((item) => {
+      const pluginFromTable = pluginsMap[item.plugin_id];
+      const pluginFromSnapshot = item.plugin_data;
+
+      return {
+        ...item,
+        plugin: pluginFromTable || pluginFromSnapshot || null
+      };
+    });
+
+    // 4. ดึง wishlist count
+    const { count } = await supabase
+      .from("wishlist")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id);
+
+    // 5. ดึง notifications ที่ยังไม่อ่าน
     const { data: notifications } = await supabase
       .from("wishlist_notifications")
       .select("*")
@@ -155,7 +152,7 @@ export async function getWishlist() {
       success: true,
       data: {
         items: itemsWithDetails,
-        count: countData || 0,
+        count: count || 0,
         notifications: notifications || []
       }
     };
