@@ -9,7 +9,8 @@ export default function Header() {
     <header className="sticky top-0 z-40 bg-black/80 backdrop-blur-md border-b border-gray-900">
       <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
         {/* LOGO */}
-        <Link href="/" className="text-xl font-bold text-white">
+        <Link href="/" className="text-xl font-bold text-white flex items-center gap-2">
+          <span className="text-cyan-400">🎧</span>
           Crystal Lab
         </Link>
 
@@ -20,6 +21,11 @@ export default function Header() {
           </Link>
           <Link href="/refer" className="text-gray-300 hover:text-white transition-colors">
             Refer & Earn
+          </Link>
+          <Link href="/support" className="text-gray-300 hover:text-white transition-colors">
+
+            Support
+
           </Link>
         </nav>
 
