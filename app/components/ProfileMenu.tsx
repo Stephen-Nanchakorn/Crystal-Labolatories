@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { useApp } from "@/app/context/AppContext";
 import { getUserBalance } from "@/app/actions/credit";
-import ProfileAvatar from "@/app/components/ProfileAvatar";
 
 export default function ProfileMenu() {
   const { language } = useApp();
@@ -13,36 +13,125 @@ export default function ProfileMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [balance, setBalance] = useState<number>(0);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null); // ✅ กำหนด state สำหรับ avatarUrl
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function loadUserData() {
+      setIsLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
+      
       if (user) {
         setUser(user);
         
-        // โหลดข้อมูล user จากตาราง users
+        // 1. ตรวจสอบว่ามีรูปจาก Google หรือ OAuth providers ไหม
+        const googleAvatar = user.user_metadata?.avatar_url || user.user_metadata?.picture;
+        
+        // 2. โหลดข้อมูล user จากตาราง users
         const { data: userData } = await supabase
           .from("users")
           .select("balance, avatar_url, preferred_language, preferred_currency")
           .eq("id", user.id)
           .single();
         
-        if (userData) {
-          setBalance(userData.balance || 0);
-          setAvatarUrl(userData.avatar_url); // ✅ ตั้งค่า avatarUrl จาก database
-        } else {
-          // ถ้ายังไม่มีข้อมูลใน users table
-          setBalance(0);
+        let finalAvatarUrl = null;
+        
+        if (userData?.avatar_url) {
+          // กรณี 1: มีรูปที่อัปโหลดเองในระบบ
+          finalAvatarUrl = userData.avatar_url;
+        } else if (googleAvatar) {
+          // กรณี 2: Login ด้วย Google/OAuth (ใช้รูปจาก provider)
+          finalAvatarUrl = googleAvatar;
+        }
+        // กรณี 3: ไม่มีรูป (แสดงเป็น default initial)
+        
+        setAvatarUrl(finalAvatarUrl);
+        setBalance(userData?.balance || 0);
+        
+        // 3. ถ้ายังไม่มีข้อมูลใน users table ให้สร้าง record ใหม่
+        if (!userData) {
+          await supabase
+            .from("users")
+            .upsert({
+              id: user.id,
+              email: user.email,
+              avatar_url: googleAvatar, // เก็บรูปจาก Google ไว้ใน database ด้วย
+              preferred_language: 'en',
+              preferred_currency: 'USD',
+              balance: 0,
+              created_at: new Date().toISOString()
+            });
         }
       }
+      
+      setIsLoading(false);
     }
+    
     loadUserData();
   }, [supabase.auth]);
 
   async function handleSignOut() {
     await supabase.auth.signOut();
     window.location.href = "/";
+  }
+
+  async function handleAvatarUpload(file: File) {
+    if (!user) return;
+    
+    try {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${user.id}/avatar-${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(fileName);
+
+      const publicUrl = urlData.publicUrl;
+
+      // อัปเดตในตาราง users
+      const { error: updateError } = await supabase
+        .from("users")
+        .update({ avatar_url: publicUrl })
+        .eq("id", user.id);
+
+      if (updateError) throw updateError;
+
+      setAvatarUrl(publicUrl);
+      
+    } catch (error) {
+      console.error("Error uploading avatar:", error);
+      alert("ไม่สามารถอัปโหลดรูปได้");
+    }
+  }
+
+  async function useGoogleAvatar() {
+    if (!user) return;
+    
+    const googleAvatar = user.user_metadata?.avatar_url || user.user_metadata?.picture;
+    if (!googleAvatar) return;
+    
+    try {
+      await supabase
+        .from("users")
+        .update({ avatar_url: googleAvatar })
+        .eq("id", user.id);
+      
+      setAvatarUrl(googleAvatar);
+    } catch (error) {
+      console.error("Error setting Google avatar:", error);
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="w-8 h-8 rounded-full bg-gray-800 animate-pulse"></div>
+    );
   }
 
   if (!user) {
@@ -56,20 +145,33 @@ export default function ProfileMenu() {
     );
   }
 
+  const userInitial = user.email?.charAt(0).toUpperCase() || "U";
+  const isGoogleUser = user.user_metadata?.provider === 'google' || 
+                      user.user_metadata?.avatar_url?.includes('googleusercontent') ||
+                      user.user_metadata?.picture?.includes('googleusercontent');
+
   return (
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 text-white hover:text-cyan-400 transition-colors"
       >
-        <ProfileAvatar
-          userId={user.id}
-          avatarUrl={avatarUrl} // ✅ ใช้ avatarUrl ที่มาจาก state
-          email={user.email || ""}
-          size="sm"
-        />
+        {/* Avatar Display */}
+        <div className="relative w-8 h-8 rounded-full overflow-hidden bg-cyan-400 flex items-center justify-center">
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt={user.email || "User"}
+              className="w-full h-full object-cover"
+              referrerPolicy="no-referrer" // สำคัญสำหรับรูปจาก Google
+            />
+          ) : (
+            <span className="text-black font-bold">{userInitial}</span>
+          )}
+        </div>
+        
         <span className="hidden md:inline">{user.email?.split('@')[0]}</span>
-        <span className="text-gray-400 text-sm">▼</span>
+        <span className="text-gray-400 text-xs">▼</span>
       </button>
 
       {isOpen && (
@@ -77,14 +179,47 @@ export default function ProfileMenu() {
           {/* User Info Section */}
           <div className="p-4 border-b border-gray-800">
             <div className="flex items-center gap-3 mb-3">
-              <ProfileAvatar
-                userId={user.id}
-                avatarUrl={avatarUrl}
-                email={user.email || ""}
-                size="md"
-                editable={true}
-                onUploadSuccess={(newUrl) => setAvatarUrl(newUrl)}
-              />
+              {/* Profile Avatar in Dropdown */}
+              <div className="relative">
+                <div className="w-12 h-12 rounded-full overflow-hidden bg-cyan-400 flex items-center justify-center">
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt={user.email || "User"}
+                      className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <span className="text-black font-bold text-xl">{userInitial}</span>
+                  )}
+                </div>
+                
+                {/* Edit Button */}
+                <label className="absolute bottom-0 right-0 bg-gray-800 border border-gray-700 rounded-full w-5 h-5 flex items-center justify-center cursor-pointer hover:bg-gray-700 transition-colors">
+                  <span className="text-xs">📷</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleAvatarUpload(file);
+                    }}
+                  />
+                </label>
+                
+                {/* Google Avatar Button (ถ้าเป็น Google user และยังไม่ได้ใช้รูปจาก Google) */}
+                {isGoogleUser && !avatarUrl && (
+                  <button
+                    onClick={useGoogleAvatar}
+                    className="absolute -bottom-1 -left-1 bg-blue-500 border border-blue-400 rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-blue-600 transition-colors"
+                    title="Use Google profile picture"
+                  >
+                    G
+                  </button>
+                )}
+              </div>
+              
               <div className="flex-1 min-w-0">
                 <div className="font-semibold text-white truncate">
                   {user.email}
@@ -92,6 +227,11 @@ export default function ProfileMenu() {
                 <div className="text-sm text-gray-400">
                   {language === "th" ? "สมาชิก Crystal Lab" : "Crystal Lab Member"}
                 </div>
+                {isGoogleUser && (
+                  <div className="text-xs text-cyan-400 mt-1 flex items-center gap-1">
+                    <span className="text-blue-400">G</span> Google Account
+                  </div>
+                )}
               </div>
             </div>
             
@@ -158,6 +298,15 @@ export default function ProfileMenu() {
             >
               <span>👥</span>
               <span>{language === "th" ? "ชวนเพื่อนรับเครดิต" : "Refer & Earn"}</span>
+            </Link>
+            
+            <Link
+              href="/support"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors"
+            >
+              <span>🛟</span>
+              <span>{language === "th" ? "ขอความช่วยเหลือ" : "Support"}</span>
             </Link>
           </div>
 
