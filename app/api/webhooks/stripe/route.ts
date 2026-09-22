@@ -48,7 +48,7 @@ export async function POST(request: Request) {
         billingEmail: session.customer_email,
       });
 
-      console.log(`✅ Purchase recorded via webhook: user=${userId}, plugin=${pluginId}`);
+      console.log(`Purchase recorded via webhook: user=${userId}, plugin=${pluginId}`);
     }
 
     return NextResponse.json({ received: true });
