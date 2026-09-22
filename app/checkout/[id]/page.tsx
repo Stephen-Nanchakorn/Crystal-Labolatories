@@ -1,51 +1,86 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { createCheckoutSession } from "@/lib/stripe";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-// ❌ ลบบรรทัด import CurrencyContext ออก
-
-const pluginPrices = {
-  "drop-tune": { name: "Drop-Tune", usd: 0, thb: 0 },
-  "stem-splitter": { name: "Stem Splitter", usd: 99, thb: 3249 },
-  "analog-eq": { name: "Analog EQ", usd: 59, thb: 1949 },
-};
+import { pluginPrices, type PluginId } from "@/lib/plugin-prices";
+import { createClient } from "@/lib/supabase/client";
 
 export default function CheckoutPage({ params }: { params: Promise<{ id: string }> }) {
   const [resolvedParams, setResolvedParams] = useState<{ id: string } | null>(null);
-  // ✅ สร้าง state สำหรับสกุลเงินในหน้านี้เลย
   const [currency, setCurrency] = useState<"THB" | "USD">("THB");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+  const supabase = createClient();
 
-  // ✅ โหลดค่าเก่าจาก localStorage ตอนเปิดหน้า
   useEffect(() => {
     const saved = localStorage.getItem("currency");
-    if (saved === "THB" || saved === "USD") {
-      setCurrency(saved);
-    }
+    if (saved === "THB" || saved === "USD") setCurrency(saved);
   }, []);
 
   useEffect(() => {
     params.then(setResolvedParams);
   }, [params]);
 
-  if (!resolvedParams) return <main className="min-h-screen bg-black text-white p-8"><div className="text-center">กำลังโหลด...</div></main>;
+  if (!resolvedParams) {
+    return (
+      <main className="min-h-screen bg-black text-white p-8">
+        <div className="text-center">กำลังโหลด...</div>
+      </main>
+    );
+  }
 
   const { id: pluginId } = resolvedParams;
-  const plugin = pluginPrices[pluginId as keyof typeof pluginPrices] || { name: "Unknown", usd: 0, thb: 0 };
+  const plugin = pluginPrices[pluginId as PluginId] || { name: "Unknown", usd: 0, thb: 0 };
   const price = currency === "THB" ? plugin.thb : plugin.usd;
   const symbol = currency === "THB" ? "฿" : "$";
 
   async function handlePurchase() {
     setLoading(true);
+    setError("");
     try {
-      const baseUrl = "https://crystal-labolatories-zc28.vercel.app";
-      const checkoutUrl = await createCheckoutSession(pluginId, 1, currency, `${baseUrl}/purchase-success`, `${baseUrl}/plugins/${pluginId}`);
-      if (!checkoutUrl) throw new Error("Failed to create session");
-      router.push(checkoutUrl);
+      // ✅ ต้อง login ก่อนถึงจะซื้อได้ เพราะต้องมี userId ส่งเข้า Stripe metadata
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push(`/login?redirect=/checkout/${pluginId}`);
+        return;
+      }
+
+      const baseUrl = window.location.origin;
+
+      // ปลั๊กอินฟรี → เรียก API claim-free แทน ไม่ต้องผ่าน Stripe
+      if (pluginId === "drop-tune") {
+        const res = await fetch("/api/plugins/claim-free", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pluginId }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to claim free plugin");
+        router.push(`/purchase-success?plugin=${pluginId}&free=true`);
+        return;
+      }
+
+      const response = await fetch("/api/create-checkout-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pluginId,
+          quantity: 1,
+          currency,
+          successUrl: `${baseUrl}/purchase-success?session_id={CHECKOUT_SESSION_ID}`,
+          cancelUrl: `${baseUrl}/plugins/${pluginId}`,
+          userId: user.id,
+          customerEmail: user.email,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.url) {
+        throw new Error(data.error || "Failed to create checkout session");
+      }
+
+      router.push(data.url);
     } catch (err: any) {
       setError(err.message);
       setLoading(false);
@@ -61,9 +96,10 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
         </div>
 
         <div className="border border-gray-800 rounded-lg p-6 mb-6">
-          <h3 className="text-cyan-400 mb-3">ราคาสุดท้าย</h3>
+          <h3 className="text-cyan-400 mb-3">ราคาสุทธิ</h3>
           <div className="text-4xl font-bold text-white mb-2">
-            {symbol}{price.toLocaleString(currency === "THB" ? "th-TH" : "en-US")}
+            {symbol}
+            {price.toLocaleString(currency === "THB" ? "th-TH" : "en-US")}
           </div>
           <div className="text-sm text-gray-500">
             สกุลเงินปัจจุบัน:{" "}
@@ -77,7 +113,11 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
         </div>
 
         <form onSubmit={(e) => { e.preventDefault(); handlePurchase(); }}>
-          <button type="submit" disabled={loading} className="w-full bg-cyan-400 py-4 rounded-xl font-bold text-black">
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-cyan-400 py-4 rounded-xl font-bold text-black disabled:opacity-50"
+          >
             {loading ? "กำลังดำเนินการ..." : `🛒 ซื้อเลย - ${symbol}${price.toLocaleString()}`}
           </button>
         </form>
