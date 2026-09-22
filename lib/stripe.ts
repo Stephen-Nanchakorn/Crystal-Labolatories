@@ -1,11 +1,7 @@
-"use server";
-
-import Stripe from "stripe";
+import { stripe } from "./stripe/config";
 import { getPriceInCents, getPluginName } from "@/lib/plugin-prices";
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-  apiVersion: "2026-08-26.dahlia",
-});
+export { stripe };
 
 export async function createCheckoutSession(
   pluginId: string,
@@ -29,7 +25,6 @@ export async function createCheckoutSession(
       return null;
     }
 
-    // ปลั๊กอินฟรี - ไม่ต้องผ่าน Stripe
     if (pluginId === "drop-tune") {
       return `${successUrl}&free=true`;
     }
@@ -67,24 +62,6 @@ export async function createCheckoutSession(
   }
 }
 
-export async function createStripeProductIfNotExists(pluginId: string, name: string) {
-  try {
-    const products = await stripe.products.list({ limit: 100 });
-    const existing = products.data.find((p) => p.metadata.pluginId === pluginId);
-    if (existing) return existing.id;
-
-    const product = await stripe.products.create({
-      name,
-      metadata: { pluginId },
-    });
-
-    return product.id;
-  } catch (error) {
-    console.error("Error creating Stripe product:", error);
-    return null;
-  }
-}
-
 export async function verifyPaymentSession(sessionId: string) {
   try {
     const session = await stripe.checkout.sessions.retrieve(sessionId, {
@@ -109,6 +86,24 @@ export async function getPaymentIntent(paymentIntentId: string) {
     return paymentIntent;
   } catch (error) {
     console.error("Error retrieving payment intent:", error);
+    return null;
+  }
+}
+
+export async function createStripeProductIfNotExists(pluginId: string, name: string) {
+  try {
+    const products = await stripe.products.list({ limit: 100 });
+    const existing = products.data.find((p) => p.metadata.pluginId === pluginId);
+    if (existing) return existing.id;
+
+    const product = await stripe.products.create({
+      name,
+      metadata: { pluginId },
+    });
+
+    return product.id;
+  } catch (error) {
+    console.error("Error creating Stripe product:", error);
     return null;
   }
 }
