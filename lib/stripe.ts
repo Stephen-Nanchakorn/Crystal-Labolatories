@@ -1,54 +1,49 @@
-import Stripe from "stripe";
+"use server";
 
-// ✅ Initialize Stripe
+import Stripe from "stripe";
+import { getPriceInCents, getPluginName } from "@/lib/plugin-prices";
+
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2026-08-26.dahlia",
 });
 
-// ✅ Helper: แปลงราคาเป็น cents/satang
-function getPriceInCents(pluginId: string, currency: "THB" | "USD"): number {
-  const prices = {
-    "drop-tune": { thb: 0, usd: 0 },
-    "stem-splitter": { thb: 3249 * 100, usd: 99 * 100 }, // 3249 บาท = 324900 satang
-    "analog-eq": { thb: 1949 * 100, usd: 59 * 100 }, // 1949 บาท = 194900 satang
-  };
-  
-  const plugin = prices[pluginId as keyof typeof prices] || { thb: 0, usd: 0 };
-  return currency === "THB" ? plugin.thb : plugin.usd;
-}
-
-// ✅ Main function สำหรับสร้าง checkout session
 export async function createCheckoutSession(
   pluginId: string,
   quantity: number,
   currency: "THB" | "USD",
   successUrl: string,
-  cancelUrl: string
+  cancelUrl: string,
+  userId: string,
+  customerEmail?: string
 ) {
   try {
-    // ✅ ตรวจสอบ environment variables
     if (!process.env.STRIPE_SECRET_KEY) {
       console.error("STRIPE_SECRET_KEY is not set");
       return null;
     }
 
     const unitAmount = getPriceInCents(pluginId, currency);
-    
-    // ✅ ตรวจสอบราคา (ต้อง > 0 ยกเว้น drop-tune)
+
     if (unitAmount <= 0 && pluginId !== "drop-tune") {
       console.error("Invalid price for plugin:", pluginId);
       return null;
     }
 
+    // ปลั๊กอินฟรี - ไม่ต้องผ่าน Stripe
+    if (pluginId === "drop-tune") {
+      return `${successUrl}&free=true`;
+    }
+
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: currency === "THB" ? ["card", "promptpay"] : ["card"],
+      customer_email: customerEmail,
       line_items: [
         {
           price_data: {
             currency: currency.toLowerCase(),
             product_data: {
-              name: `Crystal Labs - ${pluginId.replace("-", " ").toUpperCase()}`,
+              name: `Crystal Labs - ${getPluginName(pluginId)}`,
               description: "Lifetime license with free updates",
             },
             unit_amount: unitAmount,
@@ -61,6 +56,7 @@ export async function createCheckoutSession(
       metadata: {
         pluginId,
         currency,
+        userId,
       },
     });
 
@@ -71,24 +67,48 @@ export async function createCheckoutSession(
   }
 }
 
-// ✅ Optional: ฟังก์ชันสำหรับสร้าง product ใน Stripe Dashboard
 export async function createStripeProductIfNotExists(pluginId: string, name: string) {
   try {
-    const products = await stripe.products.list({
-      limit: 100,
-    });
-    
-    const existing = products.data.find(p => p.metadata.pluginId === pluginId);
+    const products = await stripe.products.list({ limit: 100 });
+    const existing = products.data.find((p) => p.metadata.pluginId === pluginId);
     if (existing) return existing.id;
 
     const product = await stripe.products.create({
       name,
       metadata: { pluginId },
     });
-    
+
     return product.id;
   } catch (error) {
     console.error("Error creating Stripe product:", error);
+    return null;
+  }
+}
+
+export async function verifyPaymentSession(sessionId: string) {
+  try {
+    const session = await stripe.checkout.sessions.retrieve(sessionId, {
+      expand: ["payment_intent"],
+    });
+
+    return {
+      session,
+      paymentIntent: session.payment_intent,
+      isPaid: session.payment_status === "paid",
+      metadata: session.metadata,
+    };
+  } catch (error) {
+    console.error("Error verifying payment session:", error);
+    return null;
+  }
+}
+
+export async function getPaymentIntent(paymentIntentId: string) {
+  try {
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    return paymentIntent;
+  } catch (error) {
+    console.error("Error retrieving payment intent:", error);
     return null;
   }
 }
