@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-
 import { createClient } from "@/lib/supabase/server";
-
 import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -32,33 +30,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
     }
 
-    // ✅ ตรวจสอบว่ามี RESEND_API_KEY จริงไหม
+    // ✅ ตรวจสอบ Resend API Key
     if (!process.env.RESEND_API_KEY) {
-      console.error("RESEND_API_KEY is not set in environment variables");
-      // บันทึก history แบบ demo
-      await supabase.from("invoice_emails").insert({
-        invoice_id: invoiceId,
-        user_id: userId,
-        sent_to: email,
-        sent_at: new Date().toISOString(),
-        is_demo: true,
-        error: "RESEND_API_KEY not configured",
-      });
-
-      return NextResponse.json({
-        success: false,
-        message: "Email service not configured",
-        error: "RESEND_API_KEY missing",
-      }, { status: 500 });
+      console.error("RESEND_API_KEY is not set");
+      return NextResponse.json(
+        { error: "Email service not configured" },
+        { status: 500 }
+      );
     }
 
-    // ✅ ส่งอีเมลจริงด้วย Resend
-    const resend = new Resend(process.env.RESEND_API_KEY);
-
-    const { data, error } = await resend.emails.send({
-      from: "Crystal Labs <onboarding@resend.dev>",  // ✅ ใช้ได้เลย!
+    // ✅ ส่งอีเมลจริง
+    const { data: emailResult, error: resendError } = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || "Crystal Labs <onboarding@resend.dev>",
       to: email,
-      subject: `Invoice #${invoiceNumber}`,
+      subject: `Invoice #${invoice.invoice_number} - Crystal Labs`, // ✅ เปลี่ยนจาก invoiceNumber เป็น invoice.invoice_number
       html: `
         <!DOCTYPE html>
         <html>
@@ -111,58 +96,42 @@ export async function POST(request: Request) {
           <div class="footer">
             <p>Thank you for your purchase!</p>
             <p>This is an automated email from Crystal Labs.</p>
-            <p>If you have any questions, contact: support@crystal-labs.com</p>
+            <p>If you have any questions, contact: ${process.env.SUPPORT_EMAIL || "support@crystal-labs.com"}</p>
           </div>
         </body>
         </html>
       `,
       text: `
-        CRYSTAL LABS - INVOICE #${invoice.invoice_number}
-        
-        Invoice Date: ${new Date(invoice.created_at).toLocaleDateString()}
-        Plugin: ${invoice.plugins?.name || invoice.plugin_id}
-        Amount: ${invoice.amount_total} ${invoice.currency}
-        Status: PAID
-        
-        View invoice details:
-        https://crystal-labolatories-zc28.vercel.app/profile/invoices/${invoiceId}
-        
-        Thank you for your purchase!
-        
-        Crystal Labs Support
-        support@crystal-labs.com
+CRYSTAL LABS - INVOICE #${invoice.invoice_number}
+
+Invoice Date: ${new Date(invoice.created_at).toLocaleDateString()}
+Plugin: ${invoice.plugins?.name || invoice.plugin_id}
+Amount: ${invoice.amount_total} ${invoice.currency}
+Status: PAID
+
+View invoice details:
+https://crystal-labolatories-zc28.vercel.app/profile/invoices/${invoiceId}
+
+Thank you for your purchase!
+
+Crystal Labs Support
+${process.env.SUPPORT_EMAIL || "support@crystal-labs.com"}
       `,
     });
 
     if (resendError) {
-      console.error("Resend email error:", resendError);
-
-      await supabase.from("invoice_emails").insert({
-        invoice_id: invoiceId,
-        user_id: userId,
-        sent_to: email,
-        sent_at: new Date().toISOString(),
-        is_demo: false,
-        error: resendError.message,
-        success: false,
-      });
-
-      return NextResponse.json({
-        success: false,
-        message: "Failed to send email",
-        error: resendError.message,
-      }, { status: 500 });
+      console.error("Resend error:", resendError);
+      throw new Error(`Email sending failed: ${resendError.message}`);
     }
 
-    // ✅ บันทึกว่าส่งสำเร็จ
+    // บันทึก history
     await supabase.from("invoice_emails").insert({
       invoice_id: invoiceId,
       user_id: userId,
       sent_to: email,
       sent_at: new Date().toISOString(),
-      is_demo: false,
-      success: true,
       resend_id: emailResult?.id,
+      success: true,
     });
 
     return NextResponse.json({
@@ -170,12 +139,11 @@ export async function POST(request: Request) {
       message: "Email sent successfully",
       invoiceId,
       sentTo: email,
-      invoiceNumber: invoice.invoice_number,
       resendId: emailResult?.id,
     });
 
   } catch (error: any) {
-    console.error("Send invoice email error:", error);
+    console.error("Send email error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
