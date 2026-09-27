@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 /** @type {import('next').NextConfig} */
-const nextConfig = {
+const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       {
@@ -16,7 +16,7 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'images.unsplash.com', // สำหรับรูปปลั๊กอินจาก Unsplash
+        hostname: 'images.unsplash.com', // สำหรับรูปโปรไฟล์จาก Unsplash
         pathname: '/**',
       },
       {
@@ -31,10 +31,3 @@ const nextConfig = {
 };
 
 export default nextConfig;
-
-// ถ้าต้องการ force dynamic rendering สำหรับบางหน้า
-module.exports = {
-  experimental: {
-    dynamicIO: true,
-  },
-};
