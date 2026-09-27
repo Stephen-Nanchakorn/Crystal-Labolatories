@@ -4,18 +4,32 @@ import { getPriceInCents, getPluginName } from "@/lib/plugin-prices";
 export { stripe };
 
 export async function createCheckoutSession(
+
   pluginId: string,
+
   quantity: number,
+
   currency: "THB" | "USD",
+
   successUrl: string,
+
   cancelUrl: string,
+
   userId: string,
+
   customerEmail?: string
+
 ) {
   try {
+
+    // ✅ เปลี่ยนจาก STRIPE_SECRET_KEY เป็นชื่อที่ถูกต้อง
+
     if (!process.env.STRIPE_SECRET_KEY) {
+
       console.error("STRIPE_SECRET_KEY is not set");
+
       return null;
+
     }
 
     const unitAmount = getPriceInCents(pluginId, currency);

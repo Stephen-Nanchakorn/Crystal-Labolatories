@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "../../../../lib/supabase/server";
 import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
 
     // ✅ ส่งอีเมลจริง
     const { data: emailResult, error: resendError } = await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL || "Crystal Labs <onboarding@resend.dev>",
+     from: process.env.RESEND_FROM_EMAIL || "Crystal Labs <onboarding@resend.dev>",
       to: email,
       subject: `Invoice #${invoice.invoice_number} - Crystal Labs`, // ✅ เปลี่ยนจาก invoiceNumber เป็น invoice.invoice_number
       html: `
