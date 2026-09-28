@@ -39,19 +39,10 @@ export default function InvoicesPage() {
           return;
         }
 
-        // ดึง invoices จาก Supabase โดยตรง
+        // ✅ ขั้นที่ 1: ดึง invoices แบบไม่ join (ไม่พึ่ง Foreign Key)
         const { data: invoicesData, error: invoicesError } = await supabase
           .from("invoices")
-          .select(`
-            id,
-            invoice_number,
-            amount_total,
-            currency,
-            status,
-            created_at,
-            plugin_id,
-            plugins:plugin_id (name)
-          `)
+          .select("id, invoice_number, amount_total, currency, status, created_at, plugin_id")
           .eq("user_id", user.id)
           .order("created_at", { ascending: false });
 
@@ -59,11 +50,27 @@ export default function InvoicesPage() {
           throw new Error(invoicesError.message);
         }
 
-        // Map ข้อมูลเพื่อดึง plugin_name
-        const formattedInvoices = invoicesData?.map((inv: any) => ({
+        // ✅ ขั้นที่ 2: ดึงชื่อ plugin ทั้งหมดแยกต่างหาก
+        const pluginIds = [...new Set((invoicesData || []).map((inv: any) => inv.plugin_id).filter(Boolean))];
+
+        let pluginMap: Record<string, string> = {};
+        if (pluginIds.length > 0) {
+          const { data: pluginsData } = await supabase
+            .from("plugins")
+            .select("id, name")
+            .in("id", pluginIds);
+
+          pluginMap = (pluginsData || []).reduce((acc: Record<string, string>, p: any) => {
+            acc[p.id] = p.name;
+            return acc;
+          }, {});
+        }
+
+        // ✅ ขั้นที่ 3: รวมข้อมูลเข้าด้วยกันเอง (ฝั่ง JavaScript แทนฐานข้อมูล)
+        const formattedInvoices = (invoicesData || []).map((inv: any) => ({
           ...inv,
-          plugin_name: inv.plugins?.name || inv.plugin_id,
-        })) || [];
+          plugin_name: pluginMap[inv.plugin_id] || inv.plugin_id,
+        }));
 
         setInvoices(formattedInvoices);
       } catch (err: any) {
@@ -206,10 +213,10 @@ export default function InvoicesPage() {
                       </h2>
                       <span
                         className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${invoice.status === "paid"
-                            ? "bg-green-900 text-green-300"
-                            : invoice.status === "pending"
-                              ? "bg-yellow-900 text-yellow-300"
-                              : "bg-red-900 text-red-300"
+                          ? "bg-green-900 text-green-300"
+                          : invoice.status === "pending"
+                            ? "bg-yellow-900 text-yellow-300"
+                            : "bg-red-900 text-red-300"
                           }`}
                       >
                         {invoice.status === "paid" ? "ชำระแล้ว" :
