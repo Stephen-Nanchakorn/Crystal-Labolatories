@@ -25,7 +25,7 @@ export default function InvoicesPage() {
   const [emailSending, setEmailSending] = useState<string | null>(null);
   const [emailSuccess, setEmailSuccess] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
-  
+
   const router = useRouter();
   const supabase = createClient();
 
@@ -33,7 +33,7 @@ export default function InvoicesPage() {
     async function fetchInvoices() {
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        
+
         if (!user) {
           router.push("/login");
           return;
@@ -85,13 +85,22 @@ export default function InvoicesPage() {
 
     const result = await downloadInvoice(invoiceId);
 
+    // ✅ Type guard สำหรับเช็ค type ใหม่
     if (result.success) {
       if (result.useDirectUrl && result.url) {
-        // ✅ กรณีมีใบเสร็จจาก Stripe จริง เปิดได้เลย
-        window.open(result.url, '_blank');
+        // กรณีมีใบเสร็จจาก Stripe จริง เปิดได้เลย
+        const link = document.createElement('a');
+        link.href = result.url;
+        link.download = result.fileName || `invoice-${invoiceNumber}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
       } else if (result.redirectPath) {
-        // ✅ กรณีไม่มี URL จริง ให้พาไปหน้าที่สร้าง PDF เอง
+        // กรณีไม่มี URL จริง ให้พาไปหน้าที่สร้าง PDF เอง
         router.push(result.redirectPath);
+      } else {
+        // Fallback: alert error
+        alert("ไม่พบที่อยู่สำหรับดาวน์โหลด");
       }
     } else if (result.error) {
       alert(result.error);
@@ -152,8 +161,8 @@ export default function InvoicesPage() {
           </Link>
           <h1 className="text-3xl font-bold">ใบเสร็จของฉัน</h1>
           <p className="text-gray-400 mt-2">
-            {invoices.length > 0 
-              ? `คุณมีใบเสร็จทั้งหมด ${invoices.length} ใบ` 
+            {invoices.length > 0
+              ? `คุณมีใบเสร็จทั้งหมด ${invoices.length} ใบ`
               : "คุณยังไม่มีใบเสร็จ"}
           </p>
         </div>
@@ -196,16 +205,15 @@ export default function InvoicesPage() {
                         #{invoice.invoice_number}
                       </h2>
                       <span
-                        className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                          invoice.status === "paid"
+                        className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${invoice.status === "paid"
                             ? "bg-green-900 text-green-300"
                             : invoice.status === "pending"
-                            ? "bg-yellow-900 text-yellow-300"
-                            : "bg-red-900 text-red-300"
-                        }`}
+                              ? "bg-yellow-900 text-yellow-300"
+                              : "bg-red-900 text-red-300"
+                          }`}
                       >
                         {invoice.status === "paid" ? "ชำระแล้ว" :
-                         invoice.status === "pending" ? "รอการชำระ" : "ล้มเหลว"}
+                          invoice.status === "pending" ? "รอการชำระ" : "ล้มเหลว"}
                       </span>
                     </div>
                     <p className="text-gray-400">
