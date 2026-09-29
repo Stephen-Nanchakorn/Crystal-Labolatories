@@ -5,21 +5,18 @@ import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// ✅ แก้: downloadInvoice ไม่ยิงไปหา API ที่ไม่มีจริงอีกต่อไป
-// แต่ส่งสัญญาณให้หน้าเว็บพาไปหน้า client-side ที่สร้าง PDF เอง (ที่แก้ไว้แล้วก่อนหน้านี้)
-// ✅ ฟังก์ชัน downloadInvoice แบบใหม่
 export async function downloadInvoice(invoiceId: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    return { 
-      success: false, 
+    return {
+      success: false,
       error: "กรุณาล็อกอินก่อน",
       url: null,
       fileName: null,
       useDirectUrl: false,
-      redirectPath: null
+      redirectPath: null,
     };
   }
 
@@ -32,17 +29,16 @@ export async function downloadInvoice(invoiceId: string) {
       .single();
 
     if (!invoice) {
-      return { 
-        success: false, 
+      return {
+        success: false,
         error: "ไม่พบใบเสร็จ",
         url: null,
         fileName: null,
         useDirectUrl: false,
-        redirectPath: null
+        redirectPath: null,
       };
     }
 
-    // ถ้ามีใบเสร็จจาก Stripe จริง ใช้อันนั้นเลย
     if (invoice.stripe_receipt_url) {
       return {
         success: true,
@@ -50,33 +46,31 @@ export async function downloadInvoice(invoiceId: string) {
         useDirectUrl: true,
         url: invoice.stripe_receipt_url,
         fileName: `invoice-${invoice.invoice_number}.pdf`,
-        redirectPath: null
+        redirectPath: null,
       };
     }
 
-    // ถ้าไม่มี ให้บอกหน้าเว็บพาไปสร้าง PDF ฝั่ง client แทน
     return {
       success: true,
       error: null,
       useDirectUrl: false,
       url: null,
       fileName: `invoice-${invoice.invoice_number}.pdf`,
-      redirectPath: `/profile/invoices/${invoiceId}/download`
+      redirectPath: `/profile/invoices/${invoiceId}/download`,
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error downloading invoice:", error);
-    return { 
-      success: false, 
+    return {
+      success: false,
       error: "ไม่สามารถดาวน์โหลดใบเสร็จได้",
       url: null,
       fileName: null,
       useDirectUrl: false,
-      redirectPath: null
+      redirectPath: null,
     };
   }
 }
 
-// ✅ แก้: sendInvoiceByEmail ให้ส่งอีเมลจริงผ่าน Resend
 export async function sendInvoiceByEmail(invoiceId: string, email?: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -108,7 +102,9 @@ export async function sendInvoiceByEmail(invoiceId: string, email?: string) {
       return { error: "ระบบอีเมลยังไม่ได้ตั้งค่า" };
     }
 
-    // ✅ ส่งอีเมลจริง
+    const items = Array.isArray(invoice.items) ? invoice.items : [];
+    const pluginNames = items.map((i: any) => i.name || i.plugin_name || "Plugin").join(", ") || "Plugin";
+
     const { data: emailResult, error: resendError } = await resend.emails.send({
       from: "Crystal Labs <onboarding@resend.dev>",
       to: recipientEmail,
@@ -118,6 +114,7 @@ export async function sendInvoiceByEmail(invoiceId: string, email?: string) {
           <h2 style="color: #06b6d4;">CRYSTAL LABS</h2>
           <h3>Invoice #${invoice.invoice_number}</h3>
           <p>Date: ${new Date(invoice.created_at).toLocaleDateString()}</p>
+          <p>Plugin: ${pluginNames}</p>
           <p>Amount: ${invoice.total_amount} ${invoice.currency}</p>
           <p>Status: ${invoice.status}</p>
           <p style="margin-top: 30px;">
