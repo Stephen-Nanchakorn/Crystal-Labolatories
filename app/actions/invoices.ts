@@ -88,7 +88,7 @@ export async function sendInvoiceByEmail(invoiceId: string, email?: string) {
   try {
     const { data: invoice } = await supabase
       .from("invoices")
-      .select("invoice_number, billing_email, amount_total, currency, status, created_at, plugin_id")
+      .select("invoice_number, billing_email, total_amount, currency, status, created_at, items")
       .eq("id", invoiceId)
       .eq("user_id", user.id)
       .single();
@@ -118,7 +118,7 @@ export async function sendInvoiceByEmail(invoiceId: string, email?: string) {
           <h2 style="color: #06b6d4;">CRYSTAL LABS</h2>
           <h3>Invoice #${invoice.invoice_number}</h3>
           <p>Date: ${new Date(invoice.created_at).toLocaleDateString()}</p>
-          <p>Amount: ${invoice.amount_total} ${invoice.currency}</p>
+          <p>Amount: ${invoice.total_amount} ${invoice.currency}</p>
           <p>Status: ${invoice.status}</p>
           <p style="margin-top: 30px;">
             <a href="https://crystal-labolatories-zc28.vercel.app/profile/invoices/${invoiceId}"
