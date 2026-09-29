@@ -57,9 +57,8 @@ export default function DownloadInvoicePage() {
         doc.setFontSize(11);
         doc.text(`Date: ${new Date(invoice.created_at).toLocaleDateString()}`, 20, 55);
         doc.text(`Plugin: ${pluginNames}`, 20, 65);
-        doc.text(`Subtotal: ${invoice.subtotal ?? invoice.total_amount} ${invoice.currency}`, 20, 75);
 
-        let y = 85;
+        let y = 75;
         if (invoice.discount_amount > 0) {
           doc.text(`Discount: -${invoice.discount_amount} ${invoice.currency}`, 20, y);
           y += 10;

@@ -166,13 +166,12 @@ export default function InvoiceDetailPage() {
             <div>
               <h1 className="text-2xl font-bold mb-2">#{invoice.invoice_number}</h1>
               <span
-                className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                  invoice.status === "paid"
+                className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${invoice.status === "paid"
                     ? "bg-green-900 text-green-300"
                     : invoice.status === "pending"
-                    ? "bg-yellow-900 text-yellow-300"
-                    : "bg-red-900 text-red-300"
-                }`}
+                      ? "bg-yellow-900 text-yellow-300"
+                      : "bg-red-900 text-red-300"
+                  }`}
               >
                 {invoice.status === "paid" ? "ชำระแล้ว" : invoice.status === "pending" ? "รอการชำระ" : "ล้มเหลว"}
               </span>
@@ -203,10 +202,6 @@ export default function InvoiceDetailPage() {
           </div>
 
           <div className="border-t border-gray-800 pt-6 mb-6 space-y-2">
-            <div className="flex justify-between text-gray-400">
-              <span>ยอดรวม</span>
-              <span>{invoice.subtotal ?? invoice.total_amount} {invoice.currency?.toUpperCase()}</span>
-            </div>
             {invoice.discount_amount > 0 && (
               <div className="flex justify-between text-gray-400">
                 <span>ส่วนลด</span>
