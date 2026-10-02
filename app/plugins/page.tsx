@@ -6,7 +6,7 @@ import { useApp } from "@/app/context/AppContext";
 import PluginCard from "@/app/components/plugins/PluginCard";
 
 interface Plugin {
-  id: string;
+  id?: string;
   slug: string;
   name: string;
   description?: string;
@@ -15,8 +15,6 @@ interface Plugin {
   is_free?: boolean;
   is_featured?: boolean;
   discount_percent?: number;
-  image_url?: string;
-  developer?: string;
   [key: string]: any;
 }
 
@@ -41,17 +39,19 @@ export default function PluginsPage() {
           query = query.eq("category", selectedCategory);
         }
 
+        // ค้นหาเฉพาะคำที่ "ขึ้นต้นด้วย" ตัวอักษรที่พิมพ์ (ตัด % ข้างหน้าออก)
         if (searchTerm.trim()) {
-          query = query.or(`name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+          const term = searchTerm.trim();
+          query = query.or(`name.ilike.${term}%,slug.ilike.${term}%`);
         }
 
         const { data, error } = await query;
         if (error) throw error;
 
-        const pluginsData = data || [];
+        const pluginsData = (data as Plugin[]) || [];
         setPlugins(pluginsData);
 
-        // ดึง categories
+        // ดึงรายการ Categories เฉพาะตอนเริ่มต้น
         if (pluginsData.length > 0 && categories.length === 0) {
           const uniqueCats = Array.from(
             new Set(
@@ -72,19 +72,33 @@ export default function PluginsPage() {
     fetchPlugins();
   }, [selectedCategory, searchTerm]);
 
-  // คำนวณการแสดงผลตามปุ่ม Quick Filter
+  // คำนวณการแสดงผลปลั๊กอินตาม Quick Filter และค้นหาที่ขึ้นต้นด้วยคำที่พิมพ์
   const displayedPlugins = useMemo(() => {
+    let result = [...plugins];
+
+    // ค้นหาเฉพาะที่ "ขึ้นต้นด้วย" คำค้นหา (Starts with)
+    if (searchTerm.trim()) {
+      const term = searchTerm.trim().toLowerCase();
+      result = result.filter(
+        (p) =>
+          p.name?.toLowerCase().startsWith(term) ||
+          p.slug?.toLowerCase().startsWith(term)
+      );
+    }
+
+    // กรองตาม Quick Filter
     if (quickFilter === "free") {
-      return plugins.filter((p) => p.is_free || p.price === 0);
+      return result.filter((p) => p.is_free || p.price === 0);
     }
     if (quickFilter === "featured") {
-      return []; // ไม่พบปลั๊กอิน
+      return []; // แนะนำ: ไม่พบปลั๊กอิน
     }
     if (quickFilter === "discount") {
-      return []; // ไม่พบปลั๊กอิน
+      return []; // ลดราคา: ไม่พบปลั๊กอิน
     }
-    return plugins; // "all"
-  }, [plugins, quickFilter]);
+
+    return result; // "all"
+  }, [plugins, quickFilter, searchTerm]);
 
   function clearFilters() {
     setSearchTerm("");
@@ -118,7 +132,11 @@ export default function PluginsPage() {
         <div className="flex flex-col md:flex-row gap-4 mb-6">
           <input
             type="text"
-            placeholder={language === "th" ? "ค้นหาปลั๊กอิน..." : "Search plugins..."}
+            placeholder={
+              language === "th"
+                ? "ค้นหาปลั๊กอิน (เริ่มพิมพ์ชื่อ)..."
+                : "Search plugins (starts with)..."
+            }
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="flex-1 px-4 py-2.5 bg-gray-900 border border-gray-800 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400"
@@ -130,7 +148,9 @@ export default function PluginsPage() {
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="px-4 py-2.5 bg-gray-900 border border-gray-800 rounded-lg text-white focus:outline-none focus:border-cyan-400"
             >
-              <option value="all">{language === "th" ? "ทุกหมวดหมู่" : "All Categories"}</option>
+              <option value="all">
+                {language === "th" ? "ทุกหมวดหมู่" : "All Categories"}
+              </option>
               {categories.map((cat) => (
                 <option key={cat} value={cat}>
                   {cat}
@@ -142,19 +162,23 @@ export default function PluginsPage() {
 
         {/* Quick Filters */}
         <div className="flex flex-wrap gap-2 mb-8">
-          {filterButtons.map((btn) => (
-            <button
-              key={btn.id}
-              type="button"
-              onClick={() => setQuickFilter(btn.id)}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${quickFilter === btn.id
-                  ? "bg-cyan-400 text-black font-semibold shadow-md"
-                  : "bg-gray-900 text-gray-300 hover:bg-gray-800 border border-gray-800"
+          {filterButtons.map((btn) => {
+            const isActive = quickFilter === btn.id;
+            return (
+              <button
+                key={btn.id}
+                type="button"
+                onClick={() => setQuickFilter(btn.id)}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  isActive
+                    ? "bg-cyan-400 text-black font-semibold shadow-md"
+                    : "bg-gray-900 text-gray-300 hover:bg-gray-800 border border-gray-800"
                 }`}
-            >
-              {btn.label}
-            </button>
-          ))}
+              >
+                {btn.label}
+              </button>
+            );
+          })}
         </div>
 
         {/* Plugin Grid หรือ สถานะไม่พบปลั๊กอิน */}
@@ -180,6 +204,7 @@ export default function PluginsPage() {
               <PluginCard
                 key={plugin.slug || plugin.id}
                 {...(plugin as any)}
+                plugin={plugin as any}
               />
             ))}
           </div>
