@@ -116,12 +116,12 @@ export default function Footer() {
             </h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/contact" className="text-gray-400 hover:text-cyan-400 transition-colors">
+                <Link href="#" prefetch={false} className="text-gray-400 hover:text-cyan-400 transition-colors">
                   {language === "th" ? "📞 ติดต่อเรา" : "📞 Contact Us"}
                 </Link>
               </li>
               <li>
-                <Link href="/about" className="text-gray-400 hover:text-cyan-400 transition-colors">
+                <Link href="#" prefetch={false} className="text-gray-400 hover:text-cyan-400 transition-colors">
                   {language === "th" ? "🏢 เกี่ยวกับ Crystal Lab" : "🏢 About Crystal Lab"}
                 </Link>
               </li>
