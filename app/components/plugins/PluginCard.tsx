@@ -18,15 +18,16 @@ interface PluginCardProps {
 }
 
 export default function PluginCard({
-  slug, name, description, price, currency = "USD",
+  slug, name, description, price, currency: propCurrency,
   imageUrl, category, isFeatured = false, discountPercent = 0, isFree = false
 }: PluginCardProps) {
-  const { language } = useApp();
+  const { language, currency: contextCurrency } = useApp();
+  const currentCurrency = propCurrency || contextCurrency || "USD";
 
   function getSymbol(curr: string) { return curr === "THB" ? "฿" : "$"; }
   const displayPrice = isFree
     ? (language === "th" ? "ฟรี" : "FREE")
-    : `${getSymbol(currency)}${price.toFixed(currency === "THB" ? 0 : 2)}`;
+    : `${getSymbol(currentCurrency)}${price.toFixed(currentCurrency === "THB" ? 0 : 2)}`;
 
   return (
     <div className={`bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden hover:border-gray-700 transition-all duration-300 ${isFeatured ? 'border-cyan-500/50' : ''}`}>
