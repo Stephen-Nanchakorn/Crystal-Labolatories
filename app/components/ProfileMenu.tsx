@@ -2,10 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { useApp } from "@/app/context/AppContext";
-import { getUserBalance } from "@/app/actions/credit";
 
 export default function ProfileMenu() {
   const { language } = useApp();
@@ -15,6 +13,32 @@ export default function ProfileMenu() {
   const [balance, setBalance] = useState<number>(0);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // ระบบ Theme: ค่าเริ่มต้นเป็น "dark" เสมอ
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+
+  useEffect(() => {
+    // โหลด theme จาก localStorage (ถ้าไม่มี ให้ default เป็น dark)
+    const savedTheme = (localStorage.getItem("theme") as "dark" | "light") || "dark";
+    setTheme(savedTheme);
+    if (savedTheme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, []);
+
+  function toggleTheme() {
+    const nextTheme = theme === "dark" ? "light" : "dark";
+    setTheme(nextTheme);
+    localStorage.setItem("theme", nextTheme);
+
+    if (nextTheme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }
 
   useEffect(() => {
     async function loadUserData() {
@@ -26,11 +50,9 @@ export default function ProfileMenu() {
       if (user) {
         setUser(user);
 
-        // 1. ตรวจสอบว่ามีรูปจาก Google หรือ OAuth providers ไหม
         const googleAvatar =
           user.user_metadata?.avatar_url || user.user_metadata?.picture;
 
-        // 2. โหลดข้อมูล user จากตาราง users
         const { data: userData } = await supabase
           .from("users")
           .select("balance, avatar_url, preferred_language, preferred_currency")
@@ -38,7 +60,6 @@ export default function ProfileMenu() {
           .single();
 
         let finalAvatarUrl = null;
-
         if (userData?.avatar_url) {
           finalAvatarUrl = userData.avatar_url;
         } else if (googleAvatar) {
@@ -48,7 +69,6 @@ export default function ProfileMenu() {
         setAvatarUrl(finalAvatarUrl);
         setBalance(userData?.balance || 0);
 
-        // 3. ถ้ายังไม่มีข้อมูลใน users table ให้สร้าง record ใหม่
         if (!userData) {
           await supabase.from("users").upsert({
             id: user.id,
@@ -327,17 +347,30 @@ export default function ProfileMenu() {
           {/* Divider */}
           <div className="border-t border-gray-800"></div>
 
-          {/* Settings & Logout */}
+          {/* Theme Toggle & Logout */}
           <div className="p-2">
-            <Link
-              href="/profile"
-              prefetch={false}
-              onClick={() => setIsOpen(false)}
-              className="flex items-center gap-3 w-full px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors text-gray-300"
+            {/* สลับ Dark Mode / Light Mode แทนปุ่มตั้งค่าเดิม */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="flex items-center justify-between w-full px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors text-gray-300"
             >
-              <span>⚙</span>
-              <span>{language === "th" ? "ตั้งค่า" : "Settings"}</span>
-            </Link>
+              <div className="flex items-center gap-3">
+                <span>{theme === "dark" ? "🌙" : "☀️"}</span>
+                <span>
+                  {language === "th"
+                    ? theme === "dark"
+                      ? "โหมดมืด (Dark)"
+                      : "โหมดสว่าง (Light)"
+                    : theme === "dark"
+                    ? "Dark Mode"
+                    : "Light Mode"}
+                </span>
+              </div>
+              <span className="text-xs px-2 py-0.5 rounded bg-gray-800 text-cyan-400 font-mono">
+                {theme.toUpperCase()}
+              </span>
+            </button>
 
             <button
               onClick={handleSignOut}
