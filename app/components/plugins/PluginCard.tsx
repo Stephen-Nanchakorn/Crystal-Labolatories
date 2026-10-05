@@ -3,14 +3,13 @@
 import Link from "next/link";
 import { useApp } from "@/app/context/AppContext";
 import HeartButton from "@/app/components/wishlist/HeartButton";
-import PriceDisplay from "@/app/components/PriceDisplay";
 
 export interface PluginCardProps {
   slug: string;
   name: string;
   description?: string;
   price?: number;
-  currency?: "THB" | "USD" | string;
+  currency?: string;
   imageUrl?: string;
   image_url?: string;
   category?: string;
@@ -23,20 +22,41 @@ export interface PluginCardProps {
   [key: string]: any;
 }
 
+// ตารางราคาคงที่ตรงตามที่คุณกำหนด
+const PLUGIN_PRICES: Record<string, { thb: number; usd: number; isFree?: boolean }> = {
+  "stem-splitter": { thb: 3249, usd: 99 },
+  "analog-eq": { thb: 1949, usd: 59 },
+  "drop-tune": { thb: 0, usd: 0, isFree: true },
+};
+
 export default function PluginCard(props: PluginCardProps) {
   const { language, currency: appCurrency } = useApp();
 
-  const slug = props.slug || props.id;
+  const slug = (props.slug || props.id || "").toLowerCase();
   const name = props.name;
   const description = props.description || "";
   const imageUrl = props.imageUrl || props.image_url;
   const category = props.category;
   const isFeatured = props.isFeatured || props.is_featured || false;
   const discountPercent = props.discountPercent || props.discount_percent || 0;
-  const isFree = props.isFree || props.is_free || false;
 
-  // กำหนดค่า currency ให้เป็นประเภท "THB" | "USD"
-  const currentCurrency = ((props.currency || appCurrency || (language === "th" ? "THB" : "USD")) as "THB" | "USD");
+  // ตรวจสอบสถานะ THB / USD
+  const isTHB = (props.currency || appCurrency) === "THB" || language === "th";
+
+  // ดึงราคาที่แมปไว้ตาม slug
+  const matchedPrice = PLUGIN_PRICES[slug];
+  const isFree = props.isFree || props.is_free || matchedPrice?.isFree || false;
+
+  let displayPrice = "";
+  if (isFree) {
+    displayPrice = language === "th" ? "ฟรี" : "FREE";
+  } else if (isTHB) {
+    const amount = matchedPrice?.thb ?? props.price_thb ?? props.price_th ?? 0;
+    displayPrice = `฿${amount.toLocaleString()}`;
+  } else {
+    const amount = matchedPrice?.usd ?? props.price_usd ?? props.price ?? 0;
+    displayPrice = `$${amount.toFixed(2)}`;
+  }
 
   return (
     <div
@@ -84,7 +104,7 @@ export default function PluginCard(props: PluginCardProps) {
           <HeartButton
             pluginSlug={slug}
             pluginName={name}
-            pluginPrice={props.price || 0}
+            pluginPrice={matchedPrice?.usd || props.price || 0}
             pluginImage={imageUrl}
             size="sm"
             language={language}
@@ -104,14 +124,7 @@ export default function PluginCard(props: PluginCardProps) {
         <div className="flex justify-between items-start mb-3">
           <h3 className="text-lg font-bold text-white line-clamp-1">{name}</h3>
           <div className="text-xl font-bold text-cyan-400 whitespace-nowrap">
-            {isFree ? (
-              <span>{language === "th" ? "ฟรี" : "FREE"}</span>
-            ) : (
-              <PriceDisplay
-                pluginId={slug as "drop-tune" | "stem-splitter" | "analog-eq"}
-                currency={currentCurrency}
-              />
-            )}
+            {displayPrice}
           </div>
         </div>
 
