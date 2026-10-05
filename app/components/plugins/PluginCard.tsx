@@ -3,15 +3,14 @@
 import Link from "next/link";
 import { useApp } from "@/app/context/AppContext";
 import HeartButton from "@/app/components/wishlist/HeartButton";
+import PriceDisplay from "@/app/components/PriceDisplay";
 
 export interface PluginCardProps {
   slug: string;
   name: string;
   description?: string;
   price?: number;
-  price_thb?: number;
-  price_usd?: number;
-  currency?: string;
+  currency?: "THB" | "USD" | string;
   imageUrl?: string;
   image_url?: string;
   category?: string;
@@ -36,25 +35,8 @@ export default function PluginCard(props: PluginCardProps) {
   const discountPercent = props.discountPercent || props.discount_percent || 0;
   const isFree = props.isFree || props.is_free || false;
 
-  // ตรวจสอบสกุลเงินปัจจุบัน (อิงตาม AppContext หรือค่าภาษา)
-  const isTHB = (props.currency || appCurrency) === "THB" || language === "th";
-
-  // ดึงราคาตามสกุลเงินที่แยกไว้ในฐานข้อมูลโดยตรง (ไม่คูณเรท)
-  const finalPrice = isTHB
-    ? props.price_thb ?? props.price_th ?? props.price ?? 0
-    : props.price_usd ?? props.price ?? 0;
-
-  const currencySymbol = isTHB ? "฿" : "$";
-
-  // จัดการรูปแบบการแสดงราคา
-  const displayPrice =
-    isFree || finalPrice === 0
-      ? language === "th"
-        ? "ฟรี"
-        : "FREE"
-      : isTHB
-      ? `${currencySymbol}${Number(finalPrice).toLocaleString()}`
-      : `${currencySymbol}${Number(finalPrice).toFixed(2)}`;
+  // กำหนดค่า currency ให้เป็นประเภท "THB" | "USD"
+  const currentCurrency = ((props.currency || appCurrency || (language === "th" ? "THB" : "USD")) as "THB" | "USD");
 
   return (
     <div
@@ -102,7 +84,7 @@ export default function PluginCard(props: PluginCardProps) {
           <HeartButton
             pluginSlug={slug}
             pluginName={name}
-            pluginPrice={finalPrice}
+            pluginPrice={props.price || 0}
             pluginImage={imageUrl}
             size="sm"
             language={language}
@@ -122,7 +104,14 @@ export default function PluginCard(props: PluginCardProps) {
         <div className="flex justify-between items-start mb-3">
           <h3 className="text-lg font-bold text-white line-clamp-1">{name}</h3>
           <div className="text-xl font-bold text-cyan-400 whitespace-nowrap">
-            {displayPrice}
+            {isFree ? (
+              <span>{language === "th" ? "ฟรี" : "FREE"}</span>
+            ) : (
+              <PriceDisplay
+                pluginId={slug as "drop-tune" | "stem-splitter" | "analog-eq"}
+                currency={currentCurrency}
+              />
+            )}
           </div>
         </div>
 
