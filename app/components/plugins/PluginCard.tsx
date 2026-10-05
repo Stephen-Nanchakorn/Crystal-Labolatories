@@ -4,37 +4,67 @@ import Link from "next/link";
 import { useApp } from "@/app/context/AppContext";
 import HeartButton from "@/app/components/wishlist/HeartButton";
 
-interface PluginCardProps {
+export interface PluginCardProps {
   slug: string;
   name: string;
-  description: string;
-  price: number;
+  description?: string;
+  price?: number;
+  price_thb?: number;
+  price_usd?: number;
   currency?: string;
   imageUrl?: string;
+  image_url?: string;
   category?: string;
   isFeatured?: boolean;
+  is_featured?: boolean;
   discountPercent?: number;
+  discount_percent?: number;
   isFree?: boolean;
+  is_free?: boolean;
+  [key: string]: any;
 }
 
-export default function PluginCard({
-  slug, name, description, price, currency: propCurrency,
-  imageUrl, category, isFeatured = false, discountPercent = 0, isFree = false
-}: PluginCardProps) {
-  const { language, currency: contextCurrency } = useApp();
-  const currentCurrency = propCurrency || contextCurrency || "USD";
+export default function PluginCard(props: PluginCardProps) {
+  const { language, currency: appCurrency } = useApp();
 
-  function getSymbol(curr: string) { return curr === "THB" ? "฿" : "$"; }
-  const displayPrice = isFree
-    ? (language === "th" ? "ฟรี" : "FREE")
-    : `${getSymbol(currentCurrency)}${price.toFixed(currentCurrency === "THB" ? 0 : 2)}`;
+  const slug = props.slug || props.id;
+  const name = props.name;
+  const description = props.description || "";
+  const imageUrl = props.imageUrl || props.image_url;
+  const category = props.category;
+  const isFeatured = props.isFeatured || props.is_featured || false;
+  const discountPercent = props.discountPercent || props.discount_percent || 0;
+  const isFree = props.isFree || props.is_free || false;
+
+  // ตรวจสอบสกุลเงินปัจจุบัน (อิงตาม AppContext หรือค่าภาษา)
+  const isTHB = (props.currency || appCurrency) === "THB" || language === "th";
+
+  // ดึงราคาตามสกุลเงินที่แยกไว้ในฐานข้อมูลโดยตรง (ไม่คูณเรท)
+  const finalPrice = isTHB
+    ? props.price_thb ?? props.price_th ?? props.price ?? 0
+    : props.price_usd ?? props.price ?? 0;
+
+  const currencySymbol = isTHB ? "฿" : "$";
+
+  // จัดการรูปแบบการแสดงราคา
+  const displayPrice =
+    isFree || finalPrice === 0
+      ? language === "th"
+        ? "ฟรี"
+        : "FREE"
+      : isTHB
+      ? `${currencySymbol}${Number(finalPrice).toLocaleString()}`
+      : `${currencySymbol}${Number(finalPrice).toFixed(2)}`;
 
   return (
-    <div className={`bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden hover:border-gray-700 transition-all duration-300 ${isFeatured ? 'border-cyan-500/50' : ''}`}>
-      {/* ✅ IMAGE: Scale คงที่ทุกภาพ = 800x600 (aspect ratio 4:3), รองรับ URL/นามสกุลไฟล์ใดก็ได้ */}
+    <div
+      className={`bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden hover:border-gray-700 transition-all duration-300 ${
+        isFeatured ? "border-cyan-500/50" : ""
+      }`}
+    >
+      {/* IMAGE */}
       <div className="relative w-full aspect-[4/3] bg-gradient-to-br from-gray-800 to-black overflow-hidden">
         {imageUrl ? (
-          // ใช้ <img> ธรรมดาแทน next/image เพื่อรองรับ URL จากทุกโดเมนโดยไม่ต้อง config next.config.js
           <img
             src={imageUrl}
             alt={name}
@@ -51,18 +81,39 @@ export default function PluginCard({
         )}
 
         <div className="absolute top-3 left-3 flex flex-col gap-2">
-          {isFeatured && <span className="bg-cyan-500 text-black text-xs font-bold px-2 py-1 rounded-full">{language === "th" ? "แนะนำ" : "FEATURED"}</span>}
-          {discountPercent > 0 && <span className="bg-green-500 text-black text-xs font-bold px-2 py-1 rounded-full">-{discountPercent}%</span>}
-          {isFree && <span className="bg-blue-500 text-black text-xs font-bold px-2 py-1 rounded-full">{language === "th" ? "ฟรี" : "FREE"}</span>}
+          {isFeatured && (
+            <span className="bg-cyan-500 text-black text-xs font-bold px-2 py-1 rounded-full">
+              {language === "th" ? "แนะนำ" : "FEATURED"}
+            </span>
+          )}
+          {discountPercent > 0 && (
+            <span className="bg-green-500 text-black text-xs font-bold px-2 py-1 rounded-full">
+              -{discountPercent}%
+            </span>
+          )}
+          {isFree && (
+            <span className="bg-blue-500 text-black text-xs font-bold px-2 py-1 rounded-full">
+              {language === "th" ? "ฟรี" : "FREE"}
+            </span>
+          )}
         </div>
 
         <div className="absolute top-3 right-3">
-          <HeartButton pluginSlug={slug} pluginName={name} pluginPrice={price} pluginImage={imageUrl} size="sm" language={language} />
+          <HeartButton
+            pluginSlug={slug}
+            pluginName={name}
+            pluginPrice={finalPrice}
+            pluginImage={imageUrl}
+            size="sm"
+            language={language}
+          />
         </div>
 
         {category && (
           <div className="absolute bottom-3 left-3">
-            <span className="bg-gray-900/80 backdrop-blur-sm text-gray-300 text-xs px-2 py-1 rounded">{category}</span>
+            <span className="bg-gray-900/80 backdrop-blur-sm text-gray-300 text-xs px-2 py-1 rounded">
+              {category}
+            </span>
           </div>
         )}
       </div>
@@ -70,11 +121,18 @@ export default function PluginCard({
       <div className="p-5">
         <div className="flex justify-between items-start mb-3">
           <h3 className="text-lg font-bold text-white line-clamp-1">{name}</h3>
-          <div className="text-xl font-bold text-cyan-400 whitespace-nowrap">{displayPrice}</div>
+          <div className="text-xl font-bold text-cyan-400 whitespace-nowrap">
+            {displayPrice}
+          </div>
         </div>
+
         <p className="text-gray-400 text-sm mb-4 line-clamp-2">{description}</p>
+
         <div className="flex gap-3">
-          <Link href={`/plugins/${slug}`} className="flex-1 bg-cyan-400 hover:bg-cyan-500 text-black font-bold py-2 rounded-lg text-center transition-colors text-sm">
+          <Link
+            href={`/plugins/${slug}`}
+            className="flex-1 bg-cyan-400 hover:bg-cyan-500 text-black font-bold py-2 rounded-lg text-center transition-colors text-sm"
+          >
             {language === "th" ? "ดูรายละเอียด" : "View Details"}
           </Link>
           <button className="px-4 border border-gray-700 text-gray-300 hover:bg-gray-800 rounded-lg transition-colors text-sm">
