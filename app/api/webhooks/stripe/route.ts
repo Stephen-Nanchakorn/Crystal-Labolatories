@@ -1,10 +1,11 @@
+import { sendOrderConfirmationEmail } from "@/lib/email";
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 
 // สร้าง Stripe instance
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-  apiVersion: "2024-06-20" as any,
+  apiVersion: "2026-08-26.dahlia" as any,
 });
 
 // สร้าง Supabase Service Role client เพื่อให้ข้าม RLS ในการสร้างสิทธิ์หลังบ้าน
@@ -129,6 +130,30 @@ export async function POST(req: NextRequest) {
             console.log(`Successfully generated license for user: ${userId}, plugin: ${pluginSlug}`);
           }
         }
+      }
+
+      // รวบรวม License ที่เพิ่งสร้างเพื่อส่งอีเมล
+      const { data: userLicenses } = await supabaseAdmin
+        .from("licenses")
+        .select("plugin_name, license_key")
+        .eq("invoice_id", invoiceId);
+
+      // ดึงอีเมลลูกค้า
+      const customerEmail =
+        (event.data.object as any).customer_details?.email ||
+        (event.data.object as any).receipt_email ||
+        (event.data.object as any).metadata?.email;
+
+      if (customerEmail && userLicenses && userLicenses.length > 0) {
+        await sendOrderConfirmationEmail({
+          toEmail: customerEmail,
+          orderId: invoiceId || paymentIntentId || "ORDER",
+          licenses: userLicenses.map((l) => ({
+            pluginName: l.plugin_name,
+            licenseKey: l.license_key,
+          })),
+        });
+        console.log(`Order confirmation email sent to ${customerEmail}`);
       }
     }
   }
