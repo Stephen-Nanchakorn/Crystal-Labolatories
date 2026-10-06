@@ -39,7 +39,7 @@ export default function DownloadInvoicePage() {
         // ✅ ดึงชื่อ plugin จาก items (jsonb) แทนการ join กับตาราง plugins
         const items = Array.isArray(invoice.items) ? invoice.items : [];
         const pluginNames =
-          items.map((item: any) => item.name || item.plugin_name || "Plugin").join(", ") || "Plugin";
+          items.map((item: any) => `${item.name || item.plugin_name || "Plugin"} (${item.unit_price || 0} ${invoice.currency})`).join(", ") || "Plugin";
 
         const { jsPDF } = await import("jspdf");
         const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });

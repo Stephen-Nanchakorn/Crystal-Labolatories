@@ -19,7 +19,7 @@ interface Plugin {
 }
 
 export default function PluginsPage() {
-  const { language } = useApp();
+  const { language, currency } = useApp();
   const [plugins, setPlugins] = useState<Plugin[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [categories, setCategories] = useState<string[]>([]);
@@ -169,11 +169,10 @@ export default function PluginsPage() {
                 key={btn.id}
                 type="button"
                 onClick={() => setQuickFilter(btn.id)}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  isActive
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${isActive
                     ? "bg-cyan-400 text-black font-semibold shadow-md"
                     : "bg-gray-900 text-gray-300 hover:bg-gray-800 border border-gray-800"
-                }`}
+                  }`}
               >
                 {btn.label}
               </button>
@@ -205,6 +204,8 @@ export default function PluginsPage() {
                 key={plugin.slug || plugin.id}
                 {...(plugin as any)}
                 plugin={plugin as any}
+                currency={currency}
+                language={language}
               />
             ))}
           </div>
