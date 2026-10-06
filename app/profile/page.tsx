@@ -1,5 +1,6 @@
 "use client";
 
+import OneClickInstallButton from "@/app/components/OneClickInstallButton";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -213,11 +214,10 @@ export default function ProfilePage() {
                             {lic.plugin_name}
                           </h3>
                           <span
-                            className={`text-xs px-2 py-0.5 rounded font-mono ${
-                              lic.status === "active"
+                            className={`text-xs px-2 py-0.5 rounded font-mono ${lic.status === "active"
                                 ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                                 : "bg-red-500/10 text-red-400 border border-red-500/20"
-                            }`}
+                              }`}
                           >
                             {lic.status.toUpperCase()}
                           </span>
@@ -240,6 +240,12 @@ export default function ProfilePage() {
                         >
                           {copiedKey === lic.license_key ? "คัดลอกแล้ว!" : "Copy"}
                         </button>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 mt-2 sm:mt-0">
+                        <OneClickInstallButton
+                          pluginSlug={lic.plugin_id}
+                          pluginName={lic.plugin_name}
+                        />
                       </div>
                     </div>
 
