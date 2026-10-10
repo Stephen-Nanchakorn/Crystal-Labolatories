@@ -214,3 +214,37 @@ export default function PluginsPage() {
     </div>
   );
 }
+
+// ตัวอย่างตำแหน่ง array plugins ใน app/plugins/page.tsx
+const plugins = [
+  {
+    id: "stem-splitter",
+    slug: "stem-splitter",
+    name: "Stem Splitter Pro",
+    // ⭐️ แก้ตรงนี้: เปลี่ยน path รูปภาพให้ตรงกับรูปใหม่
+    image: "/images/plugins/stem-splitter.webp",
+    description: "AI-Powered Stem Separation with zero latency",
+    price: 49,
+    // ... ฟิลด์เดิมที่มีอยู่คงไว้ตามปกติ
+  },
+  {
+    id: "analog-eq",
+    slug: "analog-eq",
+    name: "Analog EQ",
+    // ⭐️ แก้ตรงนี้:
+    image: "/images/plugins/analog-eq.webp",
+    description: "Warm vintage analog equalizer with rich harmonics",
+    price: 29,
+    // ... ฟิลด์เดิมที่มีอยู่คงไว้ตามปกติ
+  },
+  {
+    id: "drop-tune",
+    slug: "drop-tune",
+    name: "Drop-Tune",
+    // ⭐️ แก้ตรงนี้:
+    image: "/images/plugins/drop-tune.webp",
+    description: "Instant pitch-shifting and octave detuning for guitars & vocals",
+    price: 0, // หรือ Free
+    // ... ฟิลด์เดิมที่มีอยู่คงไว้ตามปกติ
+  },
+];
