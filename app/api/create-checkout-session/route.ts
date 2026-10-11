@@ -3,8 +3,16 @@ import { createCheckoutSession } from "@/lib/stripe";
 
 export async function POST(request: Request) {
   try {
-    const { pluginId, quantity, currency, successUrl, cancelUrl, userId, customerEmail } =
-      await request.json();
+    const {
+      pluginId,
+      quantity,
+      currency,
+      successUrl,
+      cancelUrl,
+      userId,
+      customerEmail,
+      bundlePluginId,
+    } = await request.json();
 
     if (!pluginId || !currency || !successUrl || !cancelUrl || !userId) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -17,7 +25,8 @@ export async function POST(request: Request) {
       successUrl,
       cancelUrl,
       userId,
-      customerEmail
+      customerEmail,
+      bundlePluginId
     );
 
     if (!checkoutUrl) {

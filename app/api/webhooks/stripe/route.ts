@@ -20,14 +20,20 @@ export async function POST(req: NextRequest) {
 
   let event: Stripe.Event;
 
-  // 1. ตรวจสอบ Signature เพื่อความปลอดภัย (Webhook Signature Verification)
+  // 1. ตรวจสอบ Signature เพื่อความปลอดภัยอย่างเข้มงวด (Strict Webhook Signature Verification)
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!webhookSecret) {
+    console.error("STRIPE_WEBHOOK_SECRET is not configured on the server.");
+    return NextResponse.json({ error: "Webhook configuration error" }, { status: 500 });
+  }
+
+  if (!signature) {
+    console.error("Webhook rejected: Missing stripe-signature header.");
+    return NextResponse.json({ error: "Missing stripe-signature header" }, { status: 400 });
+  }
+
   try {
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-    if (webhookSecret && signature) {
-      event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-    } else {
-      event = JSON.parse(body);
-    }
+    event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
   } catch (err: any) {
     console.error("Webhook signature verification failed:", err.message);
     return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });

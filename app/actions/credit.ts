@@ -71,7 +71,7 @@ export async function getUserBalance() {
   }
 }
 
-// ==================== 2. เพิ่มเครดิต ====================
+// ==================== 2. เพิ่มเครดิต (จำกัดสิทธิ์เฉพาะ Admin เท่านั้น) ====================
 export async function addCredit(
   userId: string,
   amount: number,
@@ -80,21 +80,40 @@ export async function addCredit(
   referenceId?: string
 ) {
   const supabase = await createClient();
-  
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "กรุณาล็อกอินก่อน" };
+  }
+
+  // ✅ ตรวจสอบสิทธิ์ Admin ป้องกันผู้ใช้ภายนอกเรียก Server Action เพื่อเติมเงินเข้าตัวเอง
+  const { data: callerProfile } = await supabase
+    .from("users")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (callerProfile?.role !== "admin") {
+    console.warn(`[Security Alert] Unauthorized credit add attempt by user ${user.id}`);
+    return { error: "ไม่มีสิทธิ์ในการดำเนินการนี้ (ต้องการสิทธิ์ Admin)" };
+  }
+
+  if (amount <= 0 || isNaN(amount)) {
+    return { error: "จำนวนเครดิตไม่ถูกต้อง" };
+  }
+
   try {
-    // ตรวจสอบว่ามี user ไหม
-    const { data: user } = await supabase
+    const { data: targetUser } = await supabase
       .from("users")
       .select("balance")
       .eq("id", userId)
       .single();
 
-    if (!user) {
-      return { error: "ไม่พบผู้ใช้" };
+    if (!targetUser) {
+      return { error: "ไม่พบผู้ใช้ปลายทาง" };
     }
 
-    // อัพเดต balance ใน users table
-    const newBalance = user.balance + amount;
+    const newBalance = targetUser.balance + amount;
     
     const { error: updateError } = await supabase
       .from("users")
@@ -103,7 +122,6 @@ export async function addCredit(
 
     if (updateError) throw updateError;
 
-    // บันทึก transaction
     const { error: transactionError } = await supabase
       .from("credit_transactions")
       .insert({
@@ -133,49 +151,56 @@ export async function addCredit(
 
 // ==================== 3. ใช้เครดิต (เมื่อซื้อสินค้า) ====================
 export async function useCredit(
-  userId: string,
+  _userId: string,
   amount: number,
   orderId: string,
   items: Array<{ name: string; price: number }>,
   description?: string
 ) {
   const supabase = await createClient();
-  
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "กรุณาล็อกอินก่อน" };
+  }
+
+  // ✅ ป้องกัน IDOR: บังคับใช้ user.id จาก session ของผู้เรียกเสมอ
+  const effectiveUserId = user.id;
+
+  if (amount <= 0 || isNaN(amount)) {
+    return { error: "จำนวนเครดิตที่ต้องการใช้ไม่ถูกต้อง" };
+  }
+
   try {
-    // ตรวจสอบ balance
-    const { data: user } = await supabase
+    const { data: targetUser } = await supabase
       .from("users")
       .select("balance")
-      .eq("id", userId)
+      .eq("id", effectiveUserId)
       .single();
 
-    if (!user) {
-      return { error: "ไม่พบผู้ใช้" };
+    if (!targetUser) {
+      return { error: "ไม่พบข้อมูลผู้ใช้" };
     }
 
-    // ตรวจสอบว่า balance พอไหม
-    if (user.balance < amount) {
+    if (targetUser.balance < amount) {
       return { error: "เครดิตไม่เพียงพอ" };
     }
 
-    // คำนวณยอดหลังใช้เครดิต
     const totalPrice = items.reduce((sum, item) => sum + item.price, 0);
-    const finalAmount = totalPrice - amount;
-    const newBalance = user.balance - amount;
+    const finalAmount = Math.max(0, totalPrice - amount);
+    const newBalance = targetUser.balance - amount;
 
-    // ลด balance
     const { error: updateError } = await supabase
       .from("users")
       .update({ balance: newBalance })
-      .eq("id", userId);
+      .eq("id", effectiveUserId);
 
     if (updateError) throw updateError;
 
-    // บันทึก credit usage
     const { error: usageError } = await supabase
       .from("credit_usage")
       .insert({
-        user_id: userId,
+        user_id: effectiveUserId,
         order_id: orderId,
         credit_used: amount,
         original_amount: totalPrice,
@@ -185,11 +210,10 @@ export async function useCredit(
 
     if (usageError) throw usageError;
 
-    // บันทึก transaction
     const { error: transactionError } = await supabase
       .from("credit_transactions")
       .insert({
-        user_id: userId,
+        user_id: effectiveUserId,
         transaction_type: "spend",
         amount: amount,
         description: description || `ใช้เครดิตซื้อ ${items.map(i => i.name).join(', ')}`,
@@ -217,18 +241,33 @@ export async function useCredit(
 
 // ==================== 4. โอนเครดิตให้เพื่อน ====================
 export async function transferCredit(
-  fromUserId: string,
+  _fromUserId: string,
   toUserEmail: string,
   amount: number,
   note?: string
 ) {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "กรุณาล็อกอินก่อน" };
+  }
+
+  // ✅ ป้องกัน IDOR: บังคับใช้ user.id จาก session เป็นผู้โอนเสมอ
+  const effectiveFromUserId = user.id;
+
+  if (amount <= 0 || isNaN(amount)) {
+    return { error: "จำนวนเครดิตที่ต้องการโอนต้องมากกว่า 0" };
+  }
+
+  if (user.email && user.email.toLowerCase() === toUserEmail.toLowerCase()) {
+    return { error: "ไม่สามารถโอนเครดิตให้ตัวเองได้" };
+  }
   
   try {
-    // เรียกใช้ PostgreSQL function ที่เราสร้างไว้
     const { data, error } = await supabase
       .rpc('transfer_credits', {
-        p_from_user_id: fromUserId,
+        p_from_user_id: effectiveFromUserId,
         p_to_user_email: toUserEmail,
         p_amount: amount,
         p_note: note || ''
@@ -236,7 +275,6 @@ export async function transferCredit(
 
     if (error) throw error;
     
-    // ตรวจสอบผลลัพธ์จาก RPC function
     if (data && !data.success) {
       return { error: data.error || "การโอนล้มเหลว" };
     }
@@ -255,9 +293,9 @@ export async function transferCredit(
   }
 }
 
-// ==================== 5. ดึงประวัติทั้งหมด ====================
+// ==================== 5. ดึงประวัติทั้งหมด (เฉพาะของตนเอง) ====================
 export async function getTransactionHistory(
-  userId: string,
+  _userId?: string,
   filters?: {
     type?: string;
     startDate?: string;
@@ -267,14 +305,21 @@ export async function getTransactionHistory(
   offset: number = 0
 ) {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "กรุณาล็อกอินก่อน" };
+  }
+
+  // ✅ ป้องกัน IDOR: บังคับดึงเฉพาะประวัติของตนเอง
+  const effectiveUserId = user.id;
   
   try {
     let query = supabase
       .from("credit_transactions")
       .select("*", { count: "exact" })
-      .eq("user_id", userId);
+      .eq("user_id", effectiveUserId);
 
-    // Apply filters ถ้ามี
     if (filters?.type) {
       query = query.eq("transaction_type", filters.type);
     }
@@ -287,7 +332,6 @@ export async function getTransactionHistory(
       query = query.lte("created_at", filters.endDate);
     }
 
-    // ดึงข้อมูล
     const { data, error, count } = await query
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
@@ -308,49 +352,59 @@ export async function getTransactionHistory(
 
 // ==================== 6. สร้าง credit สำหรับ testing ====================
 export async function addTestCredit(
-  userId: string,
+  _userId: string,
   amount: number = 100
 ) {
-  // ฟังก์ชันนี้สำหรับ developer เท่านั้น
   if (process.env.NODE_ENV === 'production') {
-    return { error: "ไม่สามารถใช้ใน production ได้" };
+    return { error: "ไม่อนุญาตให้ใช้ฟังก์ชันนี้ในโหมด Production" };
   }
 
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Unauthorized" };
+
   return await addCredit(
-    userId,
+    user.id,
     amount,
     'manual',
-    'ทดสอบระบบเครดิต',
+    'ทดสอบระบบเครดิต (Dev Only)',
     'test-' + Date.now()
   );
 }
 
 // ==================== 7. เช็ค balance ก่อน checkout ====================
 export async function checkBalanceBeforeCheckout(
-  userId: string,
+  _userId: string,
   cartTotal: number
 ) {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "กรุณาล็อกอินก่อน" };
+  }
+
+  const effectiveUserId = user.id;
   
   try {
-    const { data: user } = await supabase
+    const { data: targetUser } = await supabase
       .from("users")
       .select("balance")
-      .eq("id", userId)
+      .eq("id", effectiveUserId)
       .single();
 
-    if (!user) {
+    if (!targetUser) {
       return { error: "ไม่พบผู้ใช้" };
     }
 
-    const canUseCredit = user.balance > 0;
-    const maxCreditToUse = Math.min(user.balance, cartTotal);
+    const canUseCredit = targetUser.balance > 0;
+    const maxCreditToUse = Math.min(targetUser.balance, cartTotal);
     const finalAmount = cartTotal - maxCreditToUse;
 
     return {
       success: true,
       canUseCredit,
-      userBalance: user.balance,
+      userBalance: targetUser.balance,
       cartTotal,
       maxCreditToUse,
       finalAmount,

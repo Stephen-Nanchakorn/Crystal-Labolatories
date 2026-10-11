@@ -1,154 +1,110 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
+import { getPriceInCents, getPluginName, isPluginFree } from "@/lib/plugin-prices";
 
 export async function POST(request: Request) {
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    return NextResponse.json({ error: "Stripe is not configured" }, { status: 500 });
+  }
+
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
     apiVersion: "2026-08-26.dahlia" as any,
   });
 
   try {
-
     const body = await request.json();
-
     const {
-
-      amount,
-
       currency = "thb",
-
       planName,
-
       customerEmail,
-
-      items, // อาร์เรย์ปลั๊กอิน (ถ้ามี) เช่น [{ plugin_slug: 'stem-splitter', plugin_name: 'Stem Splitter' }]
-
-      userId: bodyUserId, // user_id ที่อาจส่งมาจากหน้าบ้าน
-
+      items,
+      userId: bodyUserId,
     } = body;
 
+    const normalizedCurrency = (currency.toUpperCase() === "USD" ? "USD" : "THB") as "THB" | "USD";
 
-    if (!amount) {
-
-      return NextResponse.json({ error: "Amount is required" }, { status: 400 });
-
-    }
-
-
-    // 1. ตรวจสอบยืนยันตัวตน User จาก Header หรือ Body
-
+    // 1. ตรวจสอบยืนยันตัวตน User จาก Token ก่อนเสมอเพื่อความปลอดภัย
     let userId = bodyUserId || null;
-
     const authHeader = request.headers.get("authorization");
 
-    
-
-    if (!userId && authHeader) {
-
+    if (authHeader) {
       const token = authHeader.replace("Bearer ", "");
-
       const supabase = createClient(
-
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
-
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-
         { global: { headers: { Authorization: `Bearer ${token}` } } }
-
       );
-
       const { data: { user } } = await supabase.auth.getUser();
-
       if (user) {
-
         userId = user.id;
-
       }
-
     }
 
-
-    // 2. จัดรูปแบบรายการสินค้า (items) เพื่อส่งต่อให้ Webhook
-
+    // 2. จัดรูปแบบรายการสินค้า (items) และคำนวณราคาจริงบน Server (Server-side Price Calculation)
     let formattedItems: Array<{ plugin_slug: string; plugin_name: string }> = [];
+    let serverCalculatedAmountInCents = 0;
 
-    if (items && Array.isArray(items)) {
+    if (items && Array.isArray(items) && items.length > 0) {
+      formattedItems = items.map((item: any) => {
+        const slug = item.slug || item.plugin_slug || item.id;
+        const name = item.name || item.plugin_name || item.title || getPluginName(slug);
+        return { plugin_slug: slug, plugin_name: name };
+      });
 
-      formattedItems = items.map((item: any) => ({
-
-        plugin_slug: item.slug || item.plugin_slug || item.id,
-
-        plugin_name: item.name || item.plugin_name || item.title || item.slug,
-
-      }));
-
+      for (const it of formattedItems) {
+        if (!isPluginFree(it.plugin_slug)) {
+          const itemPrice = getPriceInCents(it.plugin_slug, normalizedCurrency);
+          serverCalculatedAmountInCents += itemPrice;
+        }
+      }
     } else if (planName) {
-
-      // กรณีซื้อผ่าน planName (เช่น stem-splitter)
-
+      const slug = planName.toLowerCase().replace(/\s+/g, "-");
       formattedItems = [
-
         {
-
-          plugin_slug: planName.toLowerCase().replace(/\s+/g, "-"),
-
-          plugin_name: planName,
-
+          plugin_slug: slug,
+          plugin_name: getPluginName(slug) !== "Unknown Plugin" ? getPluginName(slug) : planName,
         },
-
       ];
-
+      if (!isPluginFree(slug)) {
+        serverCalculatedAmountInCents = getPriceInCents(slug, normalizedCurrency);
+      }
     }
 
+    // ป้องกันการแฮกราคาหรือสั่งซื้อรายการฟรีผ่าน Payment Intent
+    if (serverCalculatedAmountInCents <= 0) {
+      return NextResponse.json(
+        { error: "Invalid purchase: Total payable amount must be greater than zero. For free plugins, please use claim-free." },
+        { status: 400 }
+      );
+    }
 
-    // 3. กำหนด Payment Methods (PromptPay สำหรับ THB, Card เป็นค่ามาตรฐานสากล)
-
-    const paymentMethodTypes = currency.toLowerCase() === "thb" 
-
-      ? ["promptpay", "card"] 
-
+    // 3. กำหนด Payment Methods (PromptPay สำหรับ THB, Card สำหรับสากล)
+    const paymentMethodTypes = normalizedCurrency === "THB"
+      ? ["promptpay", "card"]
       : ["card"];
 
-
-    // 4. สร้าง Payment Intent พร้อม metadata ที่สมบูรณ์
-
+    // 4. สร้าง Payment Intent ด้วยยอดเงินที่คำนวณจาก Server เท่านั้น (ป้องกัน Arbitrary Amount Manipulation)
     const paymentIntent = await stripe.paymentIntents.create({
-
-      amount: Math.round(amount), // หน่วยสตางค์หรือ cent
-
-      currency: currency.toLowerCase(),
-
+      amount: serverCalculatedAmountInCents,
+      currency: normalizedCurrency.toLowerCase(),
       payment_method_types: paymentMethodTypes,
-
       metadata: {
-
         user_id: userId || "",
-
         email: customerEmail || "",
-
         plan: planName || "",
-
-        items: JSON.stringify(formattedItems), // Webhook จะใช้ฟิลด์นี้สร้าง License Key
-
+        items: JSON.stringify(formattedItems),
       },
-
     });
-
 
     return NextResponse.json({
-
       clientSecret: paymentIntent.client_secret,
-
       paymentIntentId: paymentIntent.id,
-
+      amount: serverCalculatedAmountInCents,
+      currency: normalizedCurrency,
     });
-
   } catch (error: any) {
-
     console.error("Stripe payment intent error:", error);
-
     return NextResponse.json({ error: error.message }, { status: 500 });
-
   }
-
 }
