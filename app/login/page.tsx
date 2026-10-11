@@ -184,10 +184,15 @@ export default function LoginPage() {
   }
 
   function handleSignInWithGoogle() {
+    const redirectParam = redirectTo || (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('redirect') : null);
+    const callbackUrl = redirectParam 
+      ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectParam)}`
+      : `${window.location.origin}/auth/callback`;
+
     supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: callbackUrl,
       },
     });
   }

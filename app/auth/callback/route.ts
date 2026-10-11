@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
+  const next = requestUrl.searchParams.get("next") || "/dashboard";
 
   // ถ้าไม่มี code ให้ redirect ไปหน้า home
   if (!code) {
@@ -21,8 +22,11 @@ export async function GET(request: Request) {
       return NextResponse.redirect(`${requestUrl.origin}/login?error=${encodeURIComponent(error.message)}`);
     }
 
-    // สำเร็จ → redirect ไปหน้า dashboard หรือ profile
-    return NextResponse.redirect(`${requestUrl.origin}/dashboard`); // หรือ /profile
+    // สำเร็จ → redirect ไปหน้าที่ระบุใน next
+    const targetUrl = next.startsWith("http")
+      ? next
+      : `${requestUrl.origin}${next.startsWith('/') ? next : `/${next}`}`;
+    return NextResponse.redirect(targetUrl);
 
   } catch (err) {
     console.error("Unexpected error in callback:", err);
