@@ -55,6 +55,20 @@ export const plugins: Plugin[] = [
     updateYears: 1,
     payhipUrl: "https://payhip.com/b/DrsQa",
   },
+  {
+    slug: "de-feedback",
+    name: "Crystal De-Feedback",
+    desc: "ปลั๊กอินกำจัดเสียงหอน (Feedback Eliminator) แบบเรียลไทม์ Latency ต่ำพิเศษ สำหรับงานแสดงสดและคอนเสิร์ต",
+    detail:
+      "Crystal De-Feedback คือปลั๊กอินตรวจจับและกำจัดเสียงหวีดหอนอัตโนมัติ (Real-Time Auto-Notch Tracking) ออกแบบมาสำหรับงาน Live Sound, คอนเสิร์ต และเวทีแสดงสดโดยเฉพาะ ทำงานด้วย Zero-Latency DSP ตัดความถี่ที่เป็นปัญหาได้รวดเร็วระดับมิลลิวินาทีโดยไม่กระทบโทนเสียงร้องหรือเครื่องดนตรีชิ้นสำคัญ พร้อมโหมด Panic Mute และ Auto-Learn โหมดเพื่อความปลอดภัยของระบบเสียง",
+    formats: ["VST3", "AU", "AAX"],
+    isFree: false,
+    type: "perpetual",
+    priceTHB: 1490,
+    priceUSD: 49.99,
+    updateYears: 1,
+    payhipUrl: "https://payhip.com/b/DEFEED",
+  },
 ];
 
 // 🎁 Subscription Bundle (รวมทุกปลั๊กอิน + ปลดล็อกผ่าน Standalone App)
